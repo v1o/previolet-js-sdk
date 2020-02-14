@@ -1,0 +1,52 @@
+{
+  "name": "previolet-js-sdk",
+  "version": "1.0.0",
+  "description": "Previolet Javascript SDK",
+  "main": "dist/previolet-sdk.min.js",
+  "module": "dist/previolet-sdk.es2015.js",
+  "unpkg": "dist/previolet-sdk.js",
+  "scripts": {
+    "dev": "cross-env NODE_ENV=development webpack-dev-server --open --hot --host 0.0.0.0 --config webpack.config.js",
+    "build": "node build/build.js && cp ./dist/previolet-sdk.js ./demo/"
+  },
+  "keywords": [
+    "previolet",
+    "sdk",
+    "api",
+    "javascript",
+    "backend"
+  ],
+  "author": {
+    "name": "Mark Simons",
+    "email": "msimons9740@gmail.com",
+    "url": "https://previolet.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/previolet/previolet-js-sdk"
+  },
+  "files": [
+    "dist"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "rollup": "^0.41.6",
+    "rollup-plugin-buble": "^0.15.0",
+    "uglify-js": "^2.8.22",
+    "webpack": "^3.12.0",
+    "cross-env": "5.2.1",
+    "webpack-dev-server": "^2.11.5"
+  },
+  "peerDependencies": {},
+  "tags": [
+    "previolet",
+    "sdk",
+    "api",
+    "javascript",
+    "backend"
+  ],
+  "dependencies": {
+    "axios": "^0.19.1",
+    "moment": "^2.24.0"
+  }
+}
