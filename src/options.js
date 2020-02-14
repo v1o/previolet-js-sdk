@@ -1,0 +1,16 @@
+export default {
+  baseUrl: 'https://{{instance}}.{{region}}.previolet.com/v1',
+  region: 'eu.east1',
+  guestTokenExpiration: 5,
+  storageType: 'localStorage',
+  storageNamespace: 'previolet-sdk',
+  tokenName: 'token',
+  applicationStorage: 'app',
+  browserIdentification: 'bid',
+  userStorage: 'user',
+  debug: false,
+  reqIndex: 1,
+  sdkVersion: '1.0.0',
+  appVersion: '-',
+  defaultConfig: {},
+}
