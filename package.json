@@ -1,5 +1,5 @@
 {
-  "name": "previolet-js-sdk",
+  "name": "previolet",
   "version": "1.0.0",
   "description": "Previolet Javascript SDK",
   "main": "dist/previolet-sdk.min.js",
@@ -16,14 +16,10 @@
     "javascript",
     "backend"
   ],
-  "author": {
-    "name": "Mark Simons",
-    "email": "msimons9740@gmail.com",
-    "url": "https://previolet.com"
-  },
+  "author": "Mark Simons <msimons9740@gmail.com> (https://previolet.com)",
   "repository": {
     "type": "git",
-    "url": "https://github.com/previolet/previolet-js-sdk"
+    "url": "git+https://github.com/previolet/previolet-js-sdk.git"
   },
   "files": [
     "dist"
@@ -36,7 +32,8 @@
     "uglify-js": "^2.8.22",
     "webpack": "^4.41.6",
     "webpack-cli": "^3.3.11",
-    "webpack-dev-server": "^3.10.3"
+    "webpack-dev-server": "^3.10.3",
+    "moment": "^2.24.0"
   },
   "peerDependencies": {},
   "tags": [
@@ -47,7 +44,10 @@
     "backend"
   ],
   "dependencies": {
-    "axios": "^0.19.1",
-    "moment": "^2.24.0"
-  }
+    "axios": "^0.19.1"
+  },
+  "bugs": {
+    "url": "https://github.com/previolet/previolet-js-sdk/issues"
+  },
+  "homepage": "https://github.com/previolet/previolet-js-sdk#readme"
 }

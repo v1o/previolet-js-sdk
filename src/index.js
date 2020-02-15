@@ -425,13 +425,13 @@ export default class PrevioletSDK {
     var endpoint = getBaseUrl(this.options, instance) + url
 
     if (this.options.debug) {
-      console.log('⬆️ XHR Request (' + req_id + ')', endpoint, options)
+      console.log('> XHR Request (' + req_id + ')', endpoint, options)
     }
 
     return axios(endpoint, options)
       .then(ret => {
         if (this.options.debug) {
-          console.log('⬇️ XHR Response (' + req_id + ')', ret)
+          console.log('< XHR Response (' + req_id + ')', ret)
         }
 
         return ret.data
