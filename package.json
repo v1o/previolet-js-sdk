@@ -11,10 +11,10 @@
   },
   "keywords": [
     "previolet",
-    "sdk",
-    "api",
-    "javascript",
-    "backend"
+    "authentication",
+    "database",
+    "storage",
+    "remote-config"
   ],
   "author": "Mark Simons <msimons9740@gmail.com> (https://previolet.com)",
   "repository": {
@@ -38,10 +38,10 @@
   "peerDependencies": {},
   "tags": [
     "previolet",
-    "sdk",
-    "api",
-    "javascript",
-    "backend"
+    "authentication",
+    "database",
+    "storage",
+    "remote-config"
   ],
   "dependencies": {
     "axios": "^0.19.1"
