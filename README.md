@@ -8,8 +8,7 @@ This SDK is intended for end-user client access for Web, mobile Web (e.g. React 
 
 ### NPM bundler
 
-The Previolet JavaScript npm package contains code that can be run in the browser after combining the modules you use with a package bundler (e.g.
-Webpack, Browserify).
+The Previolet JavaScript npm package contains code that can be run in the browser after combining the modules you use with a package bundler.
 
 Install the Previolet npm module:
 
@@ -34,13 +33,8 @@ Include Previolet in your web application via a `<script>` tag:
   <script src="https://cdn.jsdelivr.net/npm/previolet@1.0.0/dist/previolet-sdk.min.js"></script>
 
   <script>
-    // TODO: Replace the following with your app configuration
-    var previoletConfig = {
-      // ...
-    }
-
     // Initialize Previolet
-    var sdk = new PrevioletSDK(previoletConfig)
+    var sdk = new PrevioletSDK({ ... })
   </script>
 </body>
 ```

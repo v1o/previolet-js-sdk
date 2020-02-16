@@ -130,13 +130,13 @@ Base.prototype.__call = function __call (url, options) {
   var req_id = this.options.reqIndex ++;
 
   if (this.options.debug) {
-    console.log('⬆️ XHR Request (' + req_id + '): ', endpoint, options);
+    console.log('> XHR Request (' + req_id + '): ', endpoint, options);
   }
 
   return axios(endpoint, options)
   .then(function (ret) {
     if (this$1.options.debug) {
-      console.log('⬇️ XHR Response (' + req_id + ')', ret);
+      console.log('< XHR Response (' + req_id + ')', ret);
     }
 
     return ret.data
@@ -509,7 +509,7 @@ var PrevioletSDK = function PrevioletSDK (overrideOptions) {
   }
 
   if (vm.options.debug) {
-    console.log('%c🚀 Previolet Javascript SDK instantiated in debug mode', 'color: #CC00FF');
+    console.log('%c Previolet Javascript SDK instantiated in debug mode', 'color: #CC00FF');
     console.log('Browser identification', vm.browserIdentification);
   }
 
@@ -763,7 +763,7 @@ PrevioletSDK.prototype.registerWithIdentityProvider = function registerWithIdent
     data: data,
   };
 
-  return this.__call('/__/auth/identity/' + provider + '/register?_debug=3', options).then(function (ret) {
+  return this.__call('/__/auth/identity/' + provider + '/register', options).then(function (ret) {
     this$1.__checkError(ret);
 
     if (trigger_login) {
@@ -833,13 +833,13 @@ PrevioletSDK.prototype.__call = function __call (url, options, instance) {
   var endpoint = getBaseUrl(this.options, instance) + url;
 
   if (this.options.debug) {
-    console.log('⬆️ XHR Request (' + req_id + ')', endpoint, options);
+    console.log('> XHR Request (' + req_id + ')', endpoint, options);
   }
 
   return axios(endpoint, options)
     .then(function (ret) {
       if (this$1.options.debug) {
-        console.log('⬇️ XHR Response (' + req_id + ')', ret);
+        console.log('< XHR Response (' + req_id + ')', ret);
       }
 
       return ret.data

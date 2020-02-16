@@ -113,7 +113,7 @@ export default class PrevioletSDK {
     }
 
     if (vm.options.debug) {
-      console.log('%c🚀 Previolet Javascript SDK instantiated in debug mode', 'color: #CC00FF')
+      console.log('%c Previolet Javascript SDK instantiated in debug mode', 'color: #CC00FF')
       console.log('Browser identification', vm.browserIdentification)
     }
 
@@ -357,7 +357,7 @@ export default class PrevioletSDK {
       data,
     }
 
-    return this.__call('/__/auth/identity/' + provider + '/register?_debug=3', options).then(ret => {
+    return this.__call('/__/auth/identity/' + provider + '/register', options).then(ret => {
       this.__checkError(ret)
 
       if (trigger_login) {
