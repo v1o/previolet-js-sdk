@@ -10,7 +10,7 @@ export default {
   userStorage: 'user',
   debug: false,
   reqIndex: 1,
-  sdkVersion: '1.0.0',
+  sdkVersion: '${PREVIOLET_SDK_VERSION}',
   appVersion: '-',
   defaultConfig: {},
 }

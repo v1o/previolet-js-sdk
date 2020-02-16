@@ -18,18 +18,217 @@ export default class PrevioletSDK {
     this.changeHooks = []
     this.storageApi = StorageFactory(options)
 
-    this.auth = {
-      GithubAuthProvider: {
-        id: 'github',
-      },
+    this.auth = () => {
+      return {
+        GithubAuthProvider: {
+          id: 'github',
+        },
 
-      GoogleAuthProvider: {
-        id: 'google',
-      },
+        GoogleAuthProvider: {
+          id: 'google',
+        },
 
-      FacebookAuthProvider: {
-        id: 'facebook',
-      },
+        FacebookAuthProvider: {
+          id: 'facebook',
+        },
+
+        logout: () => {
+          if (! this.auth().isAuthenticated()) {
+            return Promise.reject(new Error('There is no authenticated user'))
+          }
+
+          const data = JSON.stringify({
+            token: this.token
+          })
+
+          const options = {
+            method: 'DELETE',
+            data
+          }
+
+          if (this.options.debug) {
+            console.log('Logging Out')
+          }
+
+          return this.__call('/__/token', options, 'token').then(ret => {
+            this.storageApi.removeItem(this.options.tokenName)
+            this.storageApi.removeItem(this.options.applicationStorage)
+            this.storageApi.removeItem(this.options.userStorage)
+
+            this.changeHooks.forEach((func) => {
+              func(false)
+            })
+
+            this.__checkError(ret)
+
+            return ret
+          })
+        },
+
+        loginWithUsernameAndPassword: (name, challenge) => {
+          if (! name) {
+            return Promise.reject(new Error('username required'))
+          }
+
+          if (! challenge) {
+            return Promise.reject(new Error('password required'))
+          }
+
+          if (this.options.debug) {
+            console.log('Logging In with username and password', name, challenge)
+          }
+
+          const data = JSON.stringify({
+            name,
+            challenge,
+          })
+
+          const options = {
+            method: 'POST',
+            data,
+          }
+
+          return this.__call('/__/auth', options).then(ret => {
+            this.__checkError(ret)
+
+            this.__loadAuthenticationDataFromResponse(ret)
+
+            if (this.currentUser) {
+              this.changeHooks.forEach((func) => {
+                if (this.options.debug) {
+                  console.log('Triggering onAuthStateChanged callback', this.currentUser)
+                }
+
+                func(this.currentUser)
+              })
+            }
+
+            return ret.result.data
+          })
+        },
+
+        loginWithIdentityProvider: (provider, access_token) => {
+          access_token = access_token || this.last_access_token
+          this.last_access_token = access_token
+
+          if (this.options.debug) {
+            console.log('Logging In with identity provider:', provider, access_token)
+          }
+
+          const params = {
+            access_token,
+          }
+
+          const options = {
+            method: 'POST',
+            params,
+          }
+
+          return this.__call('/__/auth/identity/' + provider, options).then(ret => {
+            this.__checkError(ret)
+
+            if (! ret.result) {
+              this.changeHooks.forEach((func) => {
+                func(false)
+              })
+            } else if (ret.result) {
+              if (ret.result.token && ret.result.auth) {
+                this.__loadAuthenticationDataFromResponse(ret)
+
+                this.changeHooks.forEach((func) => {
+                  if (this.options.debug) {
+                    console.log('Triggering onAuthStateChanged callback', ret.result.auth)
+                  }
+
+                  func(ret.result.auth)
+                })
+              } else {
+                this.changeHooks.forEach((func) => {
+                  if (this.options.debug) {
+                    console.log('Triggering onAuthStateChanged callback', false)
+                  }
+
+                  func(false)
+                })
+              }
+            }
+
+            return ret.result
+          })
+        },
+
+        registerWithIdentityProvider: (provider, email, access_token, trigger_login) => {
+          access_token = access_token || this.last_access_token
+          trigger_login = trigger_login || true
+          this.last_access_token = access_token
+
+          const data = {
+            access_token,
+            email,
+            role: 'admin'
+          }
+
+          const options = {
+            method: 'POST',
+            data,
+          }
+
+          return this.__call('/__/auth/identity/' + provider + '/register', options).then(ret => {
+            this.__checkError(ret)
+
+            if (trigger_login) {
+              return this.loginWithIdentityProvider(provider, access_token)
+            } else {
+              return ret
+            }
+          })
+        },
+
+        isAuthenticated: () => {
+          let token = this.token
+
+          if (token) {
+            return true
+          } else {
+            return false
+          }
+        },
+
+        onAuthStateChanged: (callback) => {
+          if (typeof callback == 'function') {
+
+            if (this.changeHooks.indexOf(callback) == -1) {
+              if (this.options.debug) {
+                console.log('Registered callback function: onAuthStateChanged', callback)
+              }
+
+              this.changeHooks.push(callback)
+            } else {
+              if (this.options.debug) {
+                console.log('Callback function onAuthStateChanged is already registered', callback)
+              }
+            }
+
+            var current_user = this.currentUser
+
+            if (this.options.debug) {
+              if (current_user) {
+                console.log('User is logged in', current_user)
+              } else {
+                console.log('User is not logged in')
+              }
+            }
+
+            return callback(current_user)
+          } else {
+            if (this.options.debug) {
+              console.log('User is not logged in')
+            }
+
+            return false
+          }
+        }
+      }
     }
 
     Object.defineProperties(this, {
@@ -148,84 +347,6 @@ export default class PrevioletSDK {
     vm.currentUser = vm.user().data
   }
 
-  isAuthenticated() {
-    let token = this.token
-
-    if (token) {
-      return true
-    } else {
-      return false
-    }
-  }
-
-  onAuthStateChanged(callback) {
-    if (typeof callback == 'function') {
-
-      if (this.changeHooks.indexOf(callback) == -1) {
-        if (this.options.debug) {
-          console.log('Registered callback function: onAuthStateChanged', callback)
-        }
-
-        this.changeHooks.push(callback)
-      } else {
-        if (this.options.debug) {
-          console.log('Callback function onAuthStateChanged is already registered', callback)
-        }
-      }
-
-      var current_user = this.currentUser
-
-      if (this.options.debug) {
-        if (current_user) {
-          console.log('User is logged in', current_user)
-        } else {
-          console.log('User is not logged in')
-        }
-      }
-
-      return callback(current_user)
-    } else {
-      if (this.options.debug) {
-        console.log('User is not logged in')
-      }
-
-      return false
-    }
-  }
-
-  logout() {
-    if (! this.isAuthenticated()) {
-      return Promise.reject(new Error('There is no authenticated user'))
-    }
-
-    const data = JSON.stringify({
-      token: this.token
-    })
-
-    const options = {
-      method: 'DELETE',
-      data
-    }
-
-    if (this.options.debug) {
-      console.log('Logging Out')
-    }
-
-    return this.__call('/__/token', options, 'token').then(ret => {
-      this.storageApi.removeItem(this.options.tokenName)
-      this.storageApi.removeItem(this.options.applicationStorage)
-      this.storageApi.removeItem(this.options.userStorage)
-
-      this.changeHooks.forEach((func) => {
-        func(false)
-      })
-
-      this.__checkError(ret)
-
-      return ret
-    })
-  }
-
   getDefaultHeaders() {
     return Object.assign({}, this.headers, {})
   }
@@ -245,125 +366,6 @@ export default class PrevioletSDK {
 
       if (ret.result.token) {
         this.token = ret.result.token
-      }
-    })
-  }
-
-  loginWithUsernameAndPassword(name, challenge) {
-    if (! name) {
-      return Promise.reject(new Error('username required'))
-    }
-
-    if (! challenge) {
-      return Promise.reject(new Error('password required'))
-    }
-
-    if (this.options.debug) {
-      console.log('Logging In with username and password', name, challenge)
-    }
-
-    const data = JSON.stringify({
-      name,
-      challenge,
-    })
-
-    const options = {
-      method: 'POST',
-      data,
-    }
-
-    return this.__call('/__/auth', options).then(ret => {
-      this.__checkError(ret)
-
-      this.__loadAuthenticationDataFromResponse(ret)
-
-      if (this.currentUser) {
-        this.changeHooks.forEach((func) => {
-          if (this.options.debug) {
-            console.log('Triggering onAuthStateChanged callback', this.currentUser)
-          }
-
-          func(this.currentUser)
-        })
-      }
-
-      return ret.result.data
-    })
-  }
-
-  loginWithIdentityProvider(provider, access_token) {
-    access_token = access_token || this.last_access_token
-    this.last_access_token = access_token
-
-    if (this.options.debug) {
-      console.log('Logging In with identity provider:', provider, access_token)
-    }
-
-    const params = {
-      access_token,
-    }
-
-    const options = {
-      method: 'POST',
-      params,
-    }
-
-    return this.__call('/__/auth/identity/' + provider, options).then(ret => {
-      this.__checkError(ret)
-
-      if (! ret.result) {
-        this.changeHooks.forEach((func) => {
-          func(false)
-        })
-      } else if (ret.result) {
-        if (ret.result.token && ret.result.auth) {
-          this.__loadAuthenticationDataFromResponse(ret)
-
-          this.changeHooks.forEach((func) => {
-            if (this.options.debug) {
-              console.log('Triggering onAuthStateChanged callback', ret.result.auth)
-            }
-
-            func(ret.result.auth)
-          })
-        } else {
-          this.changeHooks.forEach((func) => {
-            if (this.options.debug) {
-              console.log('Triggering onAuthStateChanged callback', false)
-            }
-
-            func(false)
-          })
-        }
-      }
-
-      return ret.result
-    })
-  }
-
-  registerWithIdentityProvider(provider, email, access_token, trigger_login) {
-    access_token = access_token || this.last_access_token
-    trigger_login = trigger_login || true
-    this.last_access_token = access_token
-
-    const data = {
-      access_token,
-      email,
-      role: 'admin'
-    }
-
-    const options = {
-      method: 'POST',
-      data,
-    }
-
-    return this.__call('/__/auth/identity/' + provider + '/register', options).then(ret => {
-      this.__checkError(ret)
-
-      if (trigger_login) {
-        return this.loginWithIdentityProvider(provider, access_token)
-      } else {
-        return ret
       }
     })
   }

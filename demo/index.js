@@ -76,8 +76,8 @@ var router = new VueRouter({
               </p>
               <ul>
                 <li><a href="javascript:;" @click="login">Login with test credentials</a></li>
-                <li><a href="javascript:;" @click="auth(sdk.auth.GoogleAuthProvider.id)">Login with Google</a></li>
-                <li><a href="javascript:;" @click="auth(sdk.auth.GithubAuthProvider.id)">Login with Github</a></li>
+                <li><a href="javascript:;" @click="auth(sdk.auth().GoogleAuthProvider.id)">Login with Google</a></li>
+                <li><a href="javascript:;" @click="auth(sdk.auth().GithubAuthProvider.id)">Login with Github</a></li>
               </ul>
 
               <div v-if="registerProcess.start">
@@ -131,7 +131,7 @@ var router = new VueRouter({
           login () {
             const vm = this
 
-            sdk.loginWithUsernameAndPassword(
+            sdk.auth().loginWithUsernameAndPassword(
               'john@obviouslyjoe.com', 
               'demoaccount').catch(err => {
               alert(err)
@@ -140,7 +140,7 @@ var router = new VueRouter({
 
           logout() {
             const vm = this
-            sdk.logout().then(ret => {
+            sdk.auth().logout().then(ret => {
               // logout is complete
             })
           },
@@ -194,7 +194,7 @@ var router = new VueRouter({
             vm.lastUsedIdentityProvider = provider
 
             vm.$auth.authenticate(provider).then((authResponse) => {
-              sdk.loginWithIdentityProvider(provider, authResponse.data.access_token).then(ret => {
+              sdk.auth().loginWithIdentityProvider(provider, authResponse.data.access_token).then(ret => {
                 if (! ret.registered) {
                   // the user is not registered with this identity, start the registration process
                   vm.registerProcess.identity = ret.map
@@ -223,8 +223,7 @@ var router = new VueRouter({
               return
             }
 
-            sdk.registerWithIdentityProvider(vm.lastUsedIdentityProvider, vm.registerProcess.email).then(ret => {
-              console.log('aaaaa', ret)
+            sdk.auth().registerWithIdentityProvider(vm.lastUsedIdentityProvider, vm.registerProcess.email).then(ret => {
             }).catch(err => {
               alert(err)
             })
@@ -234,7 +233,7 @@ var router = new VueRouter({
         created () {
           const vm = this
 
-          sdk.onAuthStateChanged((user) => {
+          sdk.auth().onAuthStateChanged((user) => {
             if (user) {
               vm.authenticated = true
               vm.loadData()

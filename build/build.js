@@ -43,6 +43,8 @@ rollup.rollup({
 
 function write(dest, code, bundle) {
   return new Promise(function (resolve, reject) {
+    code = code.replace('${PREVIOLET_SDK_VERSION}', package.version)
+
     fs.writeFile(dest, code, function (err) {
       if (err) return reject(err);
       console.log(blue(dest) + ' ' + getSize(code));

@@ -30,7 +30,7 @@ Include Previolet in your web application via a `<script>` tag:
 
 ```html
 <body>
-  <script src="https://cdn.jsdelivr.net/npm/previolet@1.0.0/dist/previolet-sdk.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/previolet/dist/previolet-sdk.min.js"></script>
 
   <script>
     // Initialize Previolet
