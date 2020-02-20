@@ -1,7 +1,8 @@
 export default {
   baseUrl: 'https://{{instance}}.{{region}}.previolet.com/v1',
   region: 'eu.east1',
-  guestTokenExpiration: 5,
+  guestTokenExpiration: 3600, // in seconds
+  userTokenExpiration: 86400 * 10, // 10 days
   storageType: 'localStorage',
   storageNamespace: 'previolet-sdk',
   tokenName: 'token',

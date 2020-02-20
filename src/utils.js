@@ -11,3 +11,9 @@ export function getBaseUrl(options, instance) {
 
   return base_url
 }
+
+export function generateRandomNumber(from, to) {
+  from = from || 100
+  to = to || 999
+  return Math.floor((Math.random() * to) + from)
+}

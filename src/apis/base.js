@@ -1,31 +1,31 @@
 import { getBaseUrl } from '../utils'
 
 export default class Base {
-  constructor(options, token, bi, errorProxy) {
+  constructor(options, token, bi) {
     this.options    = options
     this.token      = token
     this.bi         = JSON.stringify(bi)
-    this.errorProxy = errorProxy
+
+    this.errorChain = []
   }
 
-  __generateRandomNumber(from, to) {
-    from = from || 100
-    to = to || 999
-    return Math.floor((Math.random() * to) + from)
-  }
+  addToErrorChain(context, func) {
+    if (typeof func == 'function') {
+      this.errorChain.push({
+        context,
+        func
+      })
 
-  __checkError (response) {
-    if (response.error) {
       if (this.options.debug) {
-        console.log('%cBackend error details', 'color: #FF3333', response)
+        console.log('Added function to error chain', context, func)
       }
-
-      if (typeof this.errorProxy == 'function') {
-        this.errorProxy(response)
+    } else {
+      if (this.options.debug) {
+        console.log('Cannot add function to error chain, not a function', context, func)
       }
-
-      throw response.error
     }
+
+    return this
   }
 
   __call(url, options) {
@@ -52,5 +52,31 @@ export default class Base {
     .catch(err => {
       throw err
     })
+  }
+
+  __checkError (context, response) {
+    if (response.error) {
+
+      if (this.errorChain.length) {
+        // Propagate error to error chain
+
+        this.errorChain.forEach(errorCallback => {
+          if (errorCallback.func && typeof errorCallback.func == 'function') {
+            if (this.options.debug) {
+              console.log('Propagating error', response)
+            }
+
+            errorCallback.func(errorCallback.context, response)
+          }
+        })
+      } else {
+        // Looks like we're handling errors
+        if (this.options.debug) {
+          console.log('%cBackend error details', 'color: #FF3333', response)
+        }
+
+        throw response
+      }
+    }
   }
 }

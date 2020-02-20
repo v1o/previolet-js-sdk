@@ -1,5 +1,6 @@
-import { getBaseUrl } from './utils'
+import { getBaseUrl, generateRandomNumber } from './utils'
 import defaultOptions from './options'
+import apiErrors from './errors'
 import StorageFactory from './storage'
 import DatabaseApi from './apis/database'
 import FunctionsApi from './apis/functions'
@@ -32,13 +33,16 @@ export default class PrevioletSDK {
           id: 'facebook',
         },
 
-        logout: () => {
-          if (! this.auth().isAuthenticated()) {
+        logout: (params) => {
+          if (! vm.auth().isAuthenticated()) {
             return Promise.reject(new Error('There is no authenticated user'))
           }
 
+          params = params || {}
+          params.preventUserStatePropagation = params.preventUserStatePropagation || false
+
           const data = JSON.stringify({
-            token: this.token
+            token: vm.token
           })
 
           const options = {
@@ -46,21 +50,19 @@ export default class PrevioletSDK {
             data
           }
 
-          if (this.options.debug) {
+          if (vm.options.debug) {
             console.log('Logging Out')
           }
 
-          return this.__call('/__/token', options, 'token').then(ret => {
-            this.storageApi.removeItem(this.options.tokenName)
-            this.storageApi.removeItem(this.options.applicationStorage)
-            this.storageApi.removeItem(this.options.userStorage)
+          vm.storageApi.removeItem(vm.options.tokenName)
+          vm.storageApi.removeItem(vm.options.applicationStorage)
+          vm.storageApi.removeItem(vm.options.userStorage)
 
-            this.changeHooks.forEach((func) => {
-              func(false)
-            })
+          if (! params.preventUserStatePropagation) {
+            vm.__propagateUserState(false)
+          }
 
-            this.__checkError(ret)
-
+          return vm.__call('/__/token', options, 'token').then(ret => {
             return ret
           })
         },
@@ -74,13 +76,14 @@ export default class PrevioletSDK {
             return Promise.reject(new Error('password required'))
           }
 
-          if (this.options.debug) {
+          if (vm.options.debug) {
             console.log('Logging In with username and password', name, challenge)
           }
 
           const data = JSON.stringify({
             name,
             challenge,
+            expire: vm.options.userTokenExpiration,
           })
 
           const options = {
@@ -88,19 +91,12 @@ export default class PrevioletSDK {
             data,
           }
 
-          return this.__call('/__/auth', options).then(ret => {
-            this.__checkError(ret)
+          return vm.__call('/__/auth', options).then(ret => {
+            vm.__checkError(vm, ret)
+            vm.__loadAuthenticationDataFromResponse(ret)
 
-            this.__loadAuthenticationDataFromResponse(ret)
-
-            if (this.currentUser) {
-              this.changeHooks.forEach((func) => {
-                if (this.options.debug) {
-                  console.log('Triggering onAuthStateChanged callback', this.currentUser)
-                }
-
-                func(this.currentUser)
-              })
+            if (null !== vm.currentUser) {
+              vm.__propagateUserState(vm.currentUser)
             }
 
             return ret.result.data
@@ -125,31 +121,16 @@ export default class PrevioletSDK {
           }
 
           return this.__call('/__/auth/identity/' + provider, options).then(ret => {
-            this.__checkError(ret)
+            this.__checkError(vm, ret)
 
             if (! ret.result) {
-              this.changeHooks.forEach((func) => {
-                func(false)
-              })
+              vm.__propagateUserState(false)
             } else if (ret.result) {
               if (ret.result.token && ret.result.auth) {
-                this.__loadAuthenticationDataFromResponse(ret)
-
-                this.changeHooks.forEach((func) => {
-                  if (this.options.debug) {
-                    console.log('Triggering onAuthStateChanged callback', ret.result.auth)
-                  }
-
-                  func(ret.result.auth)
-                })
+                vm.__loadAuthenticationDataFromResponse(ret)
+                vm.__propagateUserState(ret.result.auth)
               } else {
-                this.changeHooks.forEach((func) => {
-                  if (this.options.debug) {
-                    console.log('Triggering onAuthStateChanged callback', false)
-                  }
-
-                  func(false)
-                })
+                vm.__propagateUserState(false)
               }
             }
 
@@ -174,7 +155,7 @@ export default class PrevioletSDK {
           }
 
           return this.__call('/__/auth/identity/' + provider + '/register', options).then(ret => {
-            this.__checkError(ret)
+            this.__checkError(vm, ret)
 
             if (trigger_login) {
               return this.loginWithIdentityProvider(provider, access_token)
@@ -185,7 +166,7 @@ export default class PrevioletSDK {
         },
 
         isAuthenticated: () => {
-          let token = this.token
+          let token = vm.token
 
           if (token) {
             return true
@@ -194,34 +175,61 @@ export default class PrevioletSDK {
           }
         },
 
+        loginAsGuest: () => {
+          const data = JSON.stringify({
+            expire: vm.options.guestTokenExpiration
+          })
+
+          const options = {
+            method: 'POST',
+            data
+          }
+
+          return vm.__call('/__/auth/guest', options).then(ret => {
+            if (ret.error_code) {
+              vm.auth().logout()
+              return
+            }
+
+            vm.__loadAuthenticationDataFromResponse(ret)
+
+            if (null !== vm.currentUser) {
+              vm.__propagateUserState(vm.currentUser)
+            }
+
+            return ret.result.data
+          })
+        },
+
         onAuthStateChanged: (callback) => {
           if (typeof callback == 'function') {
 
-            if (this.changeHooks.indexOf(callback) == -1) {
-              if (this.options.debug) {
+            if (vm.changeHooks.indexOf(callback) == -1) {
+              if (vm.options.debug) {
                 console.log('Registered callback function: onAuthStateChanged', callback)
               }
 
-              this.changeHooks.push(callback)
+              vm.changeHooks.push(callback)
             } else {
-              if (this.options.debug) {
+              if (vm.options.debug) {
                 console.log('Callback function onAuthStateChanged is already registered', callback)
               }
             }
 
-            var current_user = this.currentUser
+            var current_user = vm.currentUser
+            var current_token = vm.token
 
-            if (this.options.debug) {
-              if (current_user) {
+            if (vm.options.debug) {
+              if (current_user && current_token) {
                 console.log('User is logged in', current_user)
               } else {
                 console.log('User is not logged in')
               }
             }
 
-            return callback(current_user)
+            return current_token && current_user ? callback(current_user) : callback(false)
           } else {
-            if (this.options.debug) {
+            if (vm.options.debug) {
               console.log('User is not logged in')
             }
 
@@ -283,8 +291,9 @@ export default class PrevioletSDK {
           return vm.__storageGet(vm.options.browserIdentification)
         },
         set(value) {
-          value['ts'] = Date.now()
-          value['rnd'] = vm.__generateRandomNumber(10000, 99999)
+          value.ts = value.ts || Date.now()
+          value.rnd = value.rnd || generateRandomNumber(10000, 99999)
+
           vm.storageApi.setItem(options.browserIdentification, btoa(JSON.stringify(value)))
         }
       }
@@ -301,6 +310,11 @@ export default class PrevioletSDK {
     var _stored_token = vm.app().token
     vm.token = _stored_token
 
+    if (vm.options.debug) {
+      console.log('%c Previolet Javascript SDK instantiated in debug mode', 'color: #CC00FF')
+    }
+
+    // Handle browser identification
     if (! vm.browserIdentification) {
         vm.browserIdentification =  {
         ua: navigator.userAgent,
@@ -309,34 +323,49 @@ export default class PrevioletSDK {
         vsdk: vm.options.sdkVersion,
         vapp: vm.options.appVersion,
       }
-    }
 
-    if (vm.options.debug) {
-      console.log('%c Previolet Javascript SDK instantiated in debug mode', 'color: #CC00FF')
-      console.log('Browser identification', vm.browserIdentification)
-    }
-
-    vm.errorProxy = (err => {
-      if (err && err.error_code && err.error_code == 3) {
-        // invalid token
-        vm.logout()
+      if (vm.options.debug) {
+        console.log('Generating browser identification', vm.browserIdentification)
       }
-    })
+    } else {
+      // Check if anything changed and if so, update the identification
+      if (vm.options.debug) {
+        console.log('Browser identification exists', vm.browserIdentification)
+      }
+
+      var match = {
+        ua: navigator.userAgent,
+        lang: navigator.language || navigator.userLanguage,
+        plat: navigator.platform,
+        vsdk: vm.options.sdkVersion,
+        vapp: vm.options.appVersion,
+        ts: vm.browserIdentification.ts,
+        rnd: vm.browserIdentification.rnd,
+      }
+
+      if (JSON.stringify(match) != JSON.stringify(vm.browserIdentification)) {
+        if (vm.options.debug) {
+          console.log('Browser identification changed, renewing', match)
+        }
+
+        vm.browserIdentification = match
+      }
+    }
 
     vm.db = () => {
-      return new DatabaseApi(options, token, vm.browserIdentification, vm.errorProxy)
+      return new DatabaseApi(vm).addToErrorChain(vm, vm.__checkError)
     }
 
     vm.functions = () => {
-      return new FunctionsApi(options, token, vm.browserIdentification, vm.errorProxy)
+      return new FunctionsApi(vm).addToErrorChain(vm, vm.__checkError)
     }
 
     vm.storage = () => {
-      return new StorageApi(options, token, vm.browserIdentification, vm.errorProxy)
+      return new StorageApi(vm).addToErrorChain(vm, vm.__checkError)
     }
 
     vm.remoteConfig = () => {
-      return new RemoteConfig(options, token, vm.browserIdentification, vm.errorProxy)
+      return new RemoteConfig(vm).addToErrorChain(vm, vm.__checkError)
     }
 
     vm.user = () => {
@@ -349,25 +378,6 @@ export default class PrevioletSDK {
 
   getDefaultHeaders() {
     return Object.assign({}, this.headers, {})
-  }
-
-  requestGuestToken () {
-    const data = JSON.stringify({
-      expire: this.options.guestTokenExpiration
-    })
-
-    const options = {
-      method: 'POST',
-      data
-    }
-
-    return this.__call('/__/auth/guest', options).then(ret => {
-      this.__checkError(ret)
-
-      if (ret.result.token) {
-        this.token = ret.result.token
-      }
-    })
   }
 
   getRemoteConfig() {
@@ -387,8 +397,20 @@ export default class PrevioletSDK {
     })
   }
 
+  __propagateUserState(userState) {
+    const vm = this
+
+    vm.changeHooks.forEach((func) => {
+      if (vm.options.debug) {
+        console.log('Triggering onAuthStateChanged callback', userState)
+      }
+
+      func(userState)
+    })
+  }
+
   __loadAuthenticationDataFromResponse(ret) {
-    if (ret.result.token && ret.result.auth) {
+    if (ret.result.token) {
       if (this.options.debug) {
         console.log('Saving token', ret.result.token)
       }
@@ -402,6 +424,16 @@ export default class PrevioletSDK {
       }
 
       this.currentUser = ret.result.auth
+    } else {
+      if (this.options.debug) {
+        console.log('Saving default guest details')
+      }
+
+      this.currentUser = {
+        name: 'Guest',
+        username: 'guest',
+        guest: true,
+      }
     }
 
     if (ret.result.data) {
@@ -443,16 +475,6 @@ export default class PrevioletSDK {
       })
   }
 
-  __checkError (response) {
-    if (response.error) {
-      if (this.options.debug) {
-        console.log('%cBackend error details', 'color: #FF3333', response)
-      }
-
-      throw response.error
-    }
-  }
-
   __storageGet(key) {
     const vm = this
 
@@ -469,9 +491,22 @@ export default class PrevioletSDK {
     return _storage_data
   }
 
-  __generateRandomNumber(from, to) {
-    from = from || 100
-    to = to || 999
-    return Math.floor((Math.random() * to) + from)
+  __checkError (context, response) {
+    if (response.error) {
+      if (context.options.debug) {
+        console.log('%cBackend error details', 'color: #FF3333', response)
+      }
+
+      if (response.error_code && (response.error_code == apiErrors.INVALID_TOKEN || response.error_code == apiErrors.TOKEN_DOESNT_MATCH_INSTANCE)) {
+        // If the user was logged in as guest, get another token
+        if (context.user().data.guest) {
+          context.auth().loginAsGuest()
+        } else {
+          context.auth().logout()
+        }
+      }
+
+      throw response
+    }
   }
 }

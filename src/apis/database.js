@@ -1,8 +1,8 @@
 import Base from './base'
 
 export default class Database extends Base {
-  constructor(options, token, bi, errorProxy) {
-    super(options, token, bi, errorProxy)
+  constructor(sdk) {
+    super(sdk.options, sdk.token, sdk.browserIdentification)
     this.currentDatabase = null
   }
 
@@ -12,7 +12,7 @@ export default class Database extends Base {
     }
 
     return this.__call('/__/index', options).then(ret => {
-      this.__checkError(ret)
+      this.__checkError(this, ret)
       return ret.result.objects
     })
   }
@@ -31,7 +31,7 @@ export default class Database extends Base {
     }
 
     return this.__callDatabase(options).then(ret => {
-      this.__checkError(ret)
+      this.__checkError(this, ret)
       return ret.result ? ret.result : ret
     })
   }
@@ -45,7 +45,7 @@ export default class Database extends Base {
     }
 
     return this.__callDatabase(options).then(ret => {
-      this.__checkError(ret)
+      this.__checkError(this, ret)
       return ret.result ? ret.result : []
     })
   }
@@ -60,7 +60,7 @@ export default class Database extends Base {
     }
 
     return this.__callDatabase(options).then(ret => {
-      this.__checkError(ret)
+      this.__checkError(this, ret)
       return ret.result && ret.result[0] ? ret.result[0] : false
     })
   }
@@ -74,7 +74,7 @@ export default class Database extends Base {
     }
 
     return this.__callDatabase(options, '/count').then(ret => {
-      this.__checkError(ret)
+      this.__checkError(this, ret)
       return ret.result ? parseInt(ret.result) : 0
     })
   }
@@ -88,7 +88,7 @@ export default class Database extends Base {
     }
 
     return this.__callDatabase(options, '/' + id).then(ret => {
-      this.__checkError(ret)
+      this.__checkError(this, ret)
       return ret.result ? ret.result : ret
     })
   }
@@ -99,7 +99,7 @@ export default class Database extends Base {
     }
 
     return this.__callDatabase(options, '/' + id).then(ret => {
-      this.__checkError(ret)
+      this.__checkError(this, ret)
       return ret.result ? ret.result : ret
     })
   }
@@ -121,7 +121,7 @@ export default class Database extends Base {
     }
 
     return this.__callDatabase(options, '/structure/views').then(ret => {
-      this.__checkError(ret)
+      this.__checkError(this, ret)
       return ret.result ? ret.result : []
     })
   }

@@ -1,5 +1,5 @@
 /*!
- * Previolet Javascript SDK v1.0.3
+ * Previolet Javascript SDK v1.0.4
  * https://github.com/previolet/previolet-js-sdk
  * Released under the MIT License.
  */
@@ -18,10 +18,17 @@ function getBaseUrl(options, instance) {
   return base_url
 }
 
+function generateRandomNumber(from, to) {
+  from = from || 100;
+  to = to || 999;
+  return Math.floor((Math.random() * to) + from)
+}
+
 var defaultOptions = {
   baseUrl: 'https://{{instance}}.{{region}}.previolet.com/v1',
   region: 'eu.east1',
-  guestTokenExpiration: 5,
+  guestTokenExpiration: 3600, // in seconds
+  userTokenExpiration: 86400 * 10, // 10 days
   storageType: 'localStorage',
   storageNamespace: 'previolet-sdk',
   tokenName: 'token',
@@ -30,9 +37,31 @@ var defaultOptions = {
   userStorage: 'user',
   debug: false,
   reqIndex: 1,
-  sdkVersion: '1.0.3',
+  sdkVersion: '1.0.4',
   appVersion: '-',
   defaultConfig: {},
+};
+
+var apiErrors = {
+	NO_TOKEN: 1,
+  INVALID_TOKEN: 2,
+  TOKEN_DOESNT_MATCH_INSTANCE: 3,
+
+  NO_AUTH_SUPPORT: 330,
+  NO_AUTH_NAME_OR_CHALLENGE: 331,
+  INVALID_NAME_OR_CHALLENGE: 332,
+  NO_RULES_FOR_ROLE: 333,
+  CANNOT_REFRESH_TOKEN: 334,
+  INVALID_RESET_HASH: 801,
+  CHALLENGES_DO_NOT_MATCH: 802,
+  INVALID_CHALLENGE: 803,
+
+  NO_IDENTITY_PROVIDER_TOKEN: 901,
+  IDENTITY_ALREADY_REGISTERED: 902,
+  IDENTITY_ID_NOT_FOUND: 903,
+  IDENTITY_NOT_FOUND: 904,
+  IDENTITY_EMAIL_CONFLICT: 905,
+  IDENTITY_MISSING_GROUP: 906, 
 };
 
 var fakeWindow = {
@@ -95,31 +124,31 @@ function StorageFactory(options) {
   }
 }
 
-var Base = function Base(options, token, bi, errorProxy) {
+var Base = function Base(options, token, bi) {
   this.options  = options;
   this.token    = token;
   this.bi       = JSON.stringify(bi);
-  this.errorProxy = errorProxy;
+
+  this.errorChain = [];
 };
 
-Base.prototype.__generateRandomNumber = function __generateRandomNumber (from, to) {
-  from = from || 100;
-  to = to || 999;
-  return Math.floor((Math.random() * to) + from)
-};
+Base.prototype.addToErrorChain = function addToErrorChain (context, func) {
+  if (typeof func == 'function') {
+    this.errorChain.push({
+      context: context,
+      func: func
+    });
 
-Base.prototype.__checkError = function __checkError (response) {
-  if (response.error) {
     if (this.options.debug) {
-      console.log('%cBackend error details', 'color: #FF3333', response);
+      console.log('Added function to error chain', context, func);
     }
-
-    if (typeof this.errorProxy == 'function') {
-      this.errorProxy(response);
+  } else {
+    if (this.options.debug) {
+      console.log('Cannot add function to error chain, not a function', context, func);
     }
-
-    throw response.error
   }
+
+  return this
 };
 
 Base.prototype.__call = function __call (url, options) {
@@ -150,9 +179,37 @@ Base.prototype.__call = function __call (url, options) {
   })
 };
 
+Base.prototype.__checkError = function __checkError (context, response) {
+    var this$1 = this;
+
+  if (response.error) {
+
+    if (this.errorChain.length) {
+      // Propagate error to error chain
+
+      this.errorChain.forEach(function (errorCallback) {
+        if (errorCallback.func && typeof errorCallback.func == 'function') {
+          if (this$1.options.debug) {
+            console.log('Propagating error', response);
+          }
+
+          errorCallback.func(errorCallback.context, response);
+        }
+      });
+    } else {
+      // Looks like we're handling errors
+      if (this.options.debug) {
+        console.log('%cBackend error details', 'color: #FF3333', response);
+      }
+
+      throw response
+    }
+  }
+};
+
 var Database = (function (Base$$1) {
-  function Database(options, token, bi, errorProxy) {
-    Base$$1.call(this, options, token, bi, errorProxy);
+  function Database(sdk) {
+    Base$$1.call(this, sdk.options, sdk.token, sdk.browserIdentification);
     this.currentDatabase = null;
   }
 
@@ -168,7 +225,7 @@ var Database = (function (Base$$1) {
     };
 
     return this.__call('/__/index', options).then(function (ret) {
-      this$1.__checkError(ret);
+      this$1.__checkError(this$1, ret);
       return ret.result.objects
     })
   };
@@ -189,7 +246,7 @@ var Database = (function (Base$$1) {
     };
 
     return this.__callDatabase(options).then(function (ret) {
-      this$1.__checkError(ret);
+      this$1.__checkError(this$1, ret);
       return ret.result ? ret.result : ret
     })
   };
@@ -205,7 +262,7 @@ var Database = (function (Base$$1) {
     };
 
     return this.__callDatabase(options).then(function (ret) {
-      this$1.__checkError(ret);
+      this$1.__checkError(this$1, ret);
       return ret.result ? ret.result : []
     })
   };
@@ -222,7 +279,7 @@ var Database = (function (Base$$1) {
     };
 
     return this.__callDatabase(options).then(function (ret) {
-      this$1.__checkError(ret);
+      this$1.__checkError(this$1, ret);
       return ret.result && ret.result[0] ? ret.result[0] : false
     })
   };
@@ -238,7 +295,7 @@ var Database = (function (Base$$1) {
     };
 
     return this.__callDatabase(options, '/count').then(function (ret) {
-      this$1.__checkError(ret);
+      this$1.__checkError(this$1, ret);
       return ret.result ? parseInt(ret.result) : 0
     })
   };
@@ -254,7 +311,7 @@ var Database = (function (Base$$1) {
     };
 
     return this.__callDatabase(options, '/' + id).then(function (ret) {
-      this$1.__checkError(ret);
+      this$1.__checkError(this$1, ret);
       return ret.result ? ret.result : ret
     })
   };
@@ -267,7 +324,7 @@ var Database = (function (Base$$1) {
     };
 
     return this.__callDatabase(options, '/' + id).then(function (ret) {
-      this$1.__checkError(ret);
+      this$1.__checkError(this$1, ret);
       return ret.result ? ret.result : ret
     })
   };
@@ -291,7 +348,7 @@ var Database = (function (Base$$1) {
     };
 
     return this.__callDatabase(options, '/structure/views').then(function (ret) {
-      this$1.__checkError(ret);
+      this$1.__checkError(this$1, ret);
       return ret.result ? ret.result : []
     })
   };
@@ -318,8 +375,8 @@ var Database = (function (Base$$1) {
 }(Base));
 
 var Functions = (function (Base$$1) {
-  function Functions(options, token, bi, errorProxy) {
-    Base$$1.call(this, options, token, bi, errorProxy);
+  function Functions(sdk) {
+    Base$$1.call(this, sdk.options, sdk.token, sdk.browserIdentification);
   }
 
   if ( Base$$1 ) Functions.__proto__ = Base$$1;
@@ -351,8 +408,8 @@ var Functions = (function (Base$$1) {
 }(Base));
 
 var Storage = (function (Base$$1) {
-  function Storage(options, token, bi, errorProxy) {
-    Base$$1.call(this, options, token, bi, errorProxy);
+  function Storage(sdk) {
+    Base$$1.call(this, sdk.options, sdk.token, sdk.browserIdentification);
   }
 
   if ( Base$$1 ) Storage.__proto__ = Base$$1;
@@ -371,8 +428,8 @@ var Storage = (function (Base$$1) {
 }(Base));
 
 var RemoteConfig = (function (Base$$1) {
-  function RemoteConfig(options, token, bi, errorProxy) {
-    Base$$1.call(this, options, token, bi, errorProxy);
+  function RemoteConfig(sdk) {
+    Base$$1.call(this, sdk.options, sdk.token, sdk.browserIdentification);
   }
 
   if ( Base$$1 ) RemoteConfig.__proto__ = Base$$1;
@@ -434,13 +491,16 @@ var PrevioletSDK = function PrevioletSDK (overrideOptions) {
         id: 'facebook',
       },
 
-      logout: function () {
-        if (! this$1.auth().isAuthenticated()) {
+      logout: function (params) {
+        if (! vm.auth().isAuthenticated()) {
           return Promise.reject(new Error('There is no authenticated user'))
         }
 
+        params = params || {};
+        params.preventUserStatePropagation = params.preventUserStatePropagation || false;
+
         var data = JSON.stringify({
-          token: this$1.token
+          token: vm.token
         });
 
         var options = {
@@ -448,21 +508,19 @@ var PrevioletSDK = function PrevioletSDK (overrideOptions) {
           data: data
         };
 
-        if (this$1.options.debug) {
+        if (vm.options.debug) {
           console.log('Logging Out');
         }
 
-        return this$1.__call('/__/token', options, 'token').then(function (ret) {
-          this$1.storageApi.removeItem(this$1.options.tokenName);
-          this$1.storageApi.removeItem(this$1.options.applicationStorage);
-          this$1.storageApi.removeItem(this$1.options.userStorage);
+        vm.storageApi.removeItem(vm.options.tokenName);
+        vm.storageApi.removeItem(vm.options.applicationStorage);
+        vm.storageApi.removeItem(vm.options.userStorage);
 
-          this$1.changeHooks.forEach(function (func) {
-            func(false);
-          });
+        if (! params.preventUserStatePropagation) {
+          vm.__propagateUserState(false);
+        }
 
-          this$1.__checkError(ret);
-
+        return vm.__call('/__/token', options, 'token').then(function (ret) {
           return ret
         })
       },
@@ -476,13 +534,14 @@ var PrevioletSDK = function PrevioletSDK (overrideOptions) {
           return Promise.reject(new Error('password required'))
         }
 
-        if (this$1.options.debug) {
+        if (vm.options.debug) {
           console.log('Logging In with username and password', name, challenge);
         }
 
         var data = JSON.stringify({
           name: name,
           challenge: challenge,
+          expire: vm.options.userTokenExpiration,
         });
 
         var options = {
@@ -490,19 +549,12 @@ var PrevioletSDK = function PrevioletSDK (overrideOptions) {
           data: data,
         };
 
-        return this$1.__call('/__/auth', options).then(function (ret) {
-          this$1.__checkError(ret);
+        return vm.__call('/__/auth', options).then(function (ret) {
+          vm.__checkError(vm, ret);
+          vm.__loadAuthenticationDataFromResponse(ret);
 
-          this$1.__loadAuthenticationDataFromResponse(ret);
-
-          if (this$1.currentUser) {
-            this$1.changeHooks.forEach(function (func) {
-              if (this$1.options.debug) {
-                console.log('Triggering onAuthStateChanged callback', this$1.currentUser);
-              }
-
-              func(this$1.currentUser);
-            });
+          if (null !== vm.currentUser) {
+            vm.__propagateUserState(vm.currentUser);
           }
 
           return ret.result.data
@@ -527,31 +579,16 @@ var PrevioletSDK = function PrevioletSDK (overrideOptions) {
         };
 
         return this$1.__call('/__/auth/identity/' + provider, options).then(function (ret) {
-          this$1.__checkError(ret);
+          this$1.__checkError(vm, ret);
 
           if (! ret.result) {
-            this$1.changeHooks.forEach(function (func) {
-              func(false);
-            });
+            vm.__propagateUserState(false);
           } else if (ret.result) {
             if (ret.result.token && ret.result.auth) {
-              this$1.__loadAuthenticationDataFromResponse(ret);
-
-              this$1.changeHooks.forEach(function (func) {
-                if (this$1.options.debug) {
-                  console.log('Triggering onAuthStateChanged callback', ret.result.auth);
-                }
-
-                func(ret.result.auth);
-              });
+              vm.__loadAuthenticationDataFromResponse(ret);
+              vm.__propagateUserState(ret.result.auth);
             } else {
-              this$1.changeHooks.forEach(function (func) {
-                if (this$1.options.debug) {
-                  console.log('Triggering onAuthStateChanged callback', false);
-                }
-
-                func(false);
-              });
+              vm.__propagateUserState(false);
             }
           }
 
@@ -576,7 +613,7 @@ var PrevioletSDK = function PrevioletSDK (overrideOptions) {
         };
 
         return this$1.__call('/__/auth/identity/' + provider + '/register', options).then(function (ret) {
-          this$1.__checkError(ret);
+          this$1.__checkError(vm, ret);
 
           if (trigger_login) {
             return this$1.loginWithIdentityProvider(provider, access_token)
@@ -587,7 +624,7 @@ var PrevioletSDK = function PrevioletSDK (overrideOptions) {
       },
 
       isAuthenticated: function () {
-        var token = this$1.token;
+        var token = vm.token;
 
         if (token) {
           return true
@@ -596,34 +633,61 @@ var PrevioletSDK = function PrevioletSDK (overrideOptions) {
         }
       },
 
+      loginAsGuest: function () {
+        var data = JSON.stringify({
+          expire: vm.options.guestTokenExpiration
+        });
+
+        var options = {
+          method: 'POST',
+          data: data
+        };
+
+        return vm.__call('/__/auth/guest', options).then(function (ret) {
+          if (ret.error_code) {
+            vm.auth().logout();
+            return
+          }
+
+          vm.__loadAuthenticationDataFromResponse(ret);
+
+          if (null !== vm.currentUser) {
+            vm.__propagateUserState(vm.currentUser);
+          }
+
+          return ret.result.data
+        })
+      },
+
       onAuthStateChanged: function (callback) {
         if (typeof callback == 'function') {
 
-          if (this$1.changeHooks.indexOf(callback) == -1) {
-            if (this$1.options.debug) {
+          if (vm.changeHooks.indexOf(callback) == -1) {
+            if (vm.options.debug) {
               console.log('Registered callback function: onAuthStateChanged', callback);
             }
 
-            this$1.changeHooks.push(callback);
+            vm.changeHooks.push(callback);
           } else {
-            if (this$1.options.debug) {
+            if (vm.options.debug) {
               console.log('Callback function onAuthStateChanged is already registered', callback);
             }
           }
 
-          var current_user = this$1.currentUser;
+          var current_user = vm.currentUser;
+          var current_token = vm.token;
 
-          if (this$1.options.debug) {
-            if (current_user) {
+          if (vm.options.debug) {
+            if (current_user && current_token) {
               console.log('User is logged in', current_user);
             } else {
               console.log('User is not logged in');
             }
           }
 
-          return callback(current_user)
+          return current_token && current_user ? callback(current_user) : callback(false)
         } else {
-          if (this$1.options.debug) {
+          if (vm.options.debug) {
             console.log('User is not logged in');
           }
 
@@ -685,8 +749,9 @@ var PrevioletSDK = function PrevioletSDK (overrideOptions) {
         return vm.__storageGet(vm.options.browserIdentification)
       },
       set: function set(value) {
-        value['ts'] = Date.now();
-        value['rnd'] = vm.__generateRandomNumber(10000, 99999);
+        value.ts = value.ts || Date.now();
+        value.rnd = value.rnd || generateRandomNumber(10000, 99999);
+
         vm.storageApi.setItem(options.browserIdentification, btoa(JSON.stringify(value)));
       }
     }
@@ -703,6 +768,11 @@ var PrevioletSDK = function PrevioletSDK (overrideOptions) {
   var _stored_token = vm.app().token;
   vm.token = _stored_token;
 
+  if (vm.options.debug) {
+    console.log('%c Previolet Javascript SDK instantiated in debug mode', 'color: #CC00FF');
+  }
+
+  // Handle browser identification
   if (! vm.browserIdentification) {
       vm.browserIdentification ={
       ua: navigator.userAgent,
@@ -711,34 +781,49 @@ var PrevioletSDK = function PrevioletSDK (overrideOptions) {
       vsdk: vm.options.sdkVersion,
       vapp: vm.options.appVersion,
     };
-  }
 
-  if (vm.options.debug) {
-    console.log('%c Previolet Javascript SDK instantiated in debug mode', 'color: #CC00FF');
-    console.log('Browser identification', vm.browserIdentification);
-  }
-
-  vm.errorProxy = (function (err) {
-    if (err && err.error_code && err.error_code == 3) {
-      // invalid token
-      vm.logout();
+    if (vm.options.debug) {
+      console.log('Generating browser identification', vm.browserIdentification);
     }
-  });
+  } else {
+    // Check if anything changed and if so, update the identification
+    if (vm.options.debug) {
+      console.log('Browser identification exists', vm.browserIdentification);
+    }
+
+    var match = {
+      ua: navigator.userAgent,
+      lang: navigator.language || navigator.userLanguage,
+      plat: navigator.platform,
+      vsdk: vm.options.sdkVersion,
+      vapp: vm.options.appVersion,
+      ts: vm.browserIdentification.ts,
+      rnd: vm.browserIdentification.rnd,
+    };
+
+    if (JSON.stringify(match) != JSON.stringify(vm.browserIdentification)) {
+      if (vm.options.debug) {
+        console.log('Browser identification changed, renewing', match);
+      }
+
+      vm.browserIdentification = match;
+    }
+  }
 
   vm.db = function () {
-    return new Database(options, token, vm.browserIdentification, vm.errorProxy)
+    return new Database(vm).addToErrorChain(vm, vm.__checkError)
   };
 
   vm.functions = function () {
-    return new Functions(options, token, vm.browserIdentification, vm.errorProxy)
+    return new Functions(vm).addToErrorChain(vm, vm.__checkError)
   };
 
   vm.storage = function () {
-    return new Storage(options, token, vm.browserIdentification, vm.errorProxy)
+    return new Storage(vm).addToErrorChain(vm, vm.__checkError)
   };
 
   vm.remoteConfig = function () {
-    return new RemoteConfig(options, token, vm.browserIdentification, vm.errorProxy)
+    return new RemoteConfig(vm).addToErrorChain(vm, vm.__checkError)
   };
 
   vm.user = function () {
@@ -751,27 +836,6 @@ var PrevioletSDK = function PrevioletSDK (overrideOptions) {
 
 PrevioletSDK.prototype.getDefaultHeaders = function getDefaultHeaders () {
   return Object.assign({}, this.headers, {})
-};
-
-PrevioletSDK.prototype.requestGuestToken = function requestGuestToken () {
-    var this$1 = this;
-
-  var data = JSON.stringify({
-    expire: this.options.guestTokenExpiration
-  });
-
-  var options = {
-    method: 'POST',
-    data: data
-  };
-
-  return this.__call('/__/auth/guest', options).then(function (ret) {
-    this$1.__checkError(ret);
-
-    if (ret.result.token) {
-      this$1.token = ret.result.token;
-    }
-  })
 };
 
 PrevioletSDK.prototype.getRemoteConfig = function getRemoteConfig () {
@@ -791,8 +855,20 @@ PrevioletSDK.prototype.getRemoteConfig = function getRemoteConfig () {
   })
 };
 
+PrevioletSDK.prototype.__propagateUserState = function __propagateUserState (userState) {
+  var vm = this;
+
+  vm.changeHooks.forEach(function (func) {
+    if (vm.options.debug) {
+      console.log('Triggering onAuthStateChanged callback', userState);
+    }
+
+    func(userState);
+  });
+};
+
 PrevioletSDK.prototype.__loadAuthenticationDataFromResponse = function __loadAuthenticationDataFromResponse (ret) {
-  if (ret.result.token && ret.result.auth) {
+  if (ret.result.token) {
     if (this.options.debug) {
       console.log('Saving token', ret.result.token);
     }
@@ -806,6 +882,16 @@ PrevioletSDK.prototype.__loadAuthenticationDataFromResponse = function __loadAut
     }
 
     this.currentUser = ret.result.auth;
+  } else {
+    if (this.options.debug) {
+      console.log('Saving default guest details');
+    }
+
+    this.currentUser = {
+      name: 'Guest',
+      username: 'guest',
+      guest: true,
+    };
   }
 
   if (ret.result.data) {
@@ -849,16 +935,6 @@ PrevioletSDK.prototype.__call = function __call (url, options, instance) {
     })
 };
 
-PrevioletSDK.prototype.__checkError = function __checkError (response) {
-  if (response.error) {
-    if (this.options.debug) {
-      console.log('%cBackend error details', 'color: #FF3333', response);
-    }
-
-    throw response.error
-  }
-};
-
 PrevioletSDK.prototype.__storageGet = function __storageGet (key) {
   var vm = this;
 
@@ -875,10 +951,23 @@ PrevioletSDK.prototype.__storageGet = function __storageGet (key) {
   return _storage_data
 };
 
-PrevioletSDK.prototype.__generateRandomNumber = function __generateRandomNumber (from, to) {
-  from = from || 100;
-  to = to || 999;
-  return Math.floor((Math.random() * to) + from)
+PrevioletSDK.prototype.__checkError = function __checkError (context, response) {
+  if (response.error) {
+    if (context.options.debug) {
+      console.log('%cBackend error details', 'color: #FF3333', response);
+    }
+
+    if (response.error_code && (response.error_code == apiErrors.INVALID_TOKEN || response.error_code == apiErrors.TOKEN_DOESNT_MATCH_INSTANCE)) {
+      // If the user was logged in as guest, get another token
+      if (context.user().data.guest) {
+        context.auth().loginAsGuest();
+      } else {
+        context.auth().logout();
+      }
+    }
+
+    throw response
+  }
 };
 
 return PrevioletSDK;

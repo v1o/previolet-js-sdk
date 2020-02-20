@@ -1,8 +1,8 @@
 import Base from './base'
 
 export default class RemoteConfig extends Base {
-  constructor(options, token, bi, errorProxy) {
-    super(options, token, bi, errorProxy)
+  constructor(sdk) {
+    super(sdk.options, sdk.token, sdk.browserIdentification)
   }
 
   get() {
