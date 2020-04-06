@@ -2,7 +2,7 @@ import Base from './base'
 
 export default class Database extends Base {
   constructor(sdk) {
-    super(sdk.options, sdk.token, sdk.browserIdentification)
+    super(sdk)
     this.currentDatabase = null
   }
 
@@ -110,6 +110,34 @@ export default class Database extends Base {
 
   addField(params) {
     // Implementation to follow
+  }
+
+  getFields(params) {
+    params = params || {}
+
+    const options = {
+      method: 'GET',
+      params,
+    }
+
+    return this.__callDatabase(options, '/structure/fields').then(ret => {
+      this.__checkError(this, ret)
+      return ret.result ? ret.result : []
+    })
+  }
+
+  getFilters(params) {
+    params = params || {}
+
+    const options = {
+      method: 'GET',
+      params,
+    }
+
+    return this.__callDatabase(options, '/structure/filters').then(ret => {
+      this.__checkError(this, ret)
+      return ret.result ? ret.result : []
+    })
   }
 
   getViews(params) {

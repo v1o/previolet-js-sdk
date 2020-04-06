@@ -1,5 +1,5 @@
 /*!
- * Previolet Javascript SDK v1.0.4
+ * Previolet Javascript SDK v1.0.5
  * https://github.com/previolet/previolet-js-sdk
  * Released under the MIT License.
  */
@@ -33,9 +33,11 @@ var defaultOptions = {
   userStorage: 'user',
   debug: false,
   reqIndex: 1,
-  sdkVersion: '1.0.4',
+  sdkVersion: '1.0.5',
   appVersion: '-',
   defaultConfig: {},
+  tokenOverride: false,
+  tokenFallback: false
 };
 
 var apiErrors = {
@@ -120,11 +122,8 @@ function StorageFactory(options) {
   }
 }
 
-var Base = function Base(options, token, bi) {
-  this.options  = options;
-  this.token    = token;
-  this.bi       = JSON.stringify(bi);
-
+var Base = function Base(sdk) {
+  this.sdk = sdk;
   this.errorChain = [];
 };
 
@@ -135,11 +134,11 @@ Base.prototype.addToErrorChain = function addToErrorChain (context, func) {
       func: func
     });
 
-    if (this.options.debug) {
+    if (this.sdk.options.debug) {
       console.log('Added function to error chain', context, func);
     }
   } else {
-    if (this.options.debug) {
+    if (this.sdk.options.debug) {
       console.log('Cannot add function to error chain, not a function', context, func);
     }
   }
@@ -147,24 +146,53 @@ Base.prototype.addToErrorChain = function addToErrorChain (context, func) {
   return this
 };
 
+Base.prototype.__getTokenToUse = function __getTokenToUse () {
+  var __token = null;
+
+  if (this.sdk.token) {
+    if (this.sdk.options.debug) {
+      console.log('Using stored token', this.sdk.token);
+    }
+    __token = this.sdk.token;
+  }
+
+  if (! __token && this.sdk.options.tokenFallback) {
+    if (this.sdk.options.debug) {
+      console.log('Token is now the fallback option', this.sdk.options.tokenFallback);
+    }
+    __token = this.sdk.options.tokenFallback;
+  }
+
+  if (this.sdk.options.tokenOverride) {
+    if (this.sdk.options.debug) {
+      console.log('Token is now the override option', this.sdk.options.tokenOverride);
+    }
+    __token = this.sdk.options.tokenOverride;
+  }
+
+  return __token
+};
+
 Base.prototype.__call = function __call (url, options) {
     var this$1 = this;
 
+  var __token = this.__getTokenToUse();
+
   options.headers = Object.assign({}, {
-    'Authorization': this.token,
-    'Identification': btoa(this.bi),
+    'Authorization': __token,
+    'Identification': btoa(this.sdk.browserIdentification),
   });
 
-  var endpoint = getBaseUrl(this.options) + url;
-  var req_id = this.options.reqIndex ++;
+  var endpoint = getBaseUrl(this.sdk.options) + url;
+  var req_id = this.sdk.options.reqIndex ++;
 
-  if (this.options.debug) {
-    console.log('> XHR Request (' + req_id + '): ', endpoint, options);
+  if (this.sdk.options.debug) {
+    console.log('> XHR Request (' + req_id + ', ' + __token + '): ', endpoint, options);
   }
 
   return axios(endpoint, options)
   .then(function (ret) {
-    if (this$1.options.debug) {
+    if (this$1.sdk.options.debug) {
       console.log('< XHR Response (' + req_id + ')', ret);
     }
 
@@ -182,10 +210,9 @@ Base.prototype.__checkError = function __checkError (context, response) {
 
     if (this.errorChain.length) {
       // Propagate error to error chain
-
       this.errorChain.forEach(function (errorCallback) {
         if (errorCallback.func && typeof errorCallback.func == 'function') {
-          if (this$1.options.debug) {
+          if (this$1.sdk.options.debug) {
             console.log('Propagating error', response);
           }
 
@@ -194,7 +221,7 @@ Base.prototype.__checkError = function __checkError (context, response) {
       });
     } else {
       // Looks like we're handling errors
-      if (this.options.debug) {
+      if (this.sdk.options.debug) {
         console.log('%cBackend error details', 'color: #FF3333', response);
       }
 
@@ -205,7 +232,7 @@ Base.prototype.__checkError = function __checkError (context, response) {
 
 var Database = (function (Base$$1) {
   function Database(sdk) {
-    Base$$1.call(this, sdk.options, sdk.token, sdk.browserIdentification);
+    Base$$1.call(this, sdk);
     this.currentDatabase = null;
   }
 
@@ -333,6 +360,38 @@ var Database = (function (Base$$1) {
     // Implementation to follow
   };
 
+  Database.prototype.getFields = function getFields (params) {
+    var this$1 = this;
+
+    params = params || {};
+
+    var options = {
+      method: 'GET',
+      params: params,
+    };
+
+    return this.__callDatabase(options, '/structure/fields').then(function (ret) {
+      this$1.__checkError(this$1, ret);
+      return ret.result ? ret.result : []
+    })
+  };
+
+  Database.prototype.getFilters = function getFilters (params) {
+    var this$1 = this;
+
+    params = params || {};
+
+    var options = {
+      method: 'GET',
+      params: params,
+    };
+
+    return this.__callDatabase(options, '/structure/filters').then(function (ret) {
+      this$1.__checkError(this$1, ret);
+      return ret.result ? ret.result : []
+    })
+  };
+
   Database.prototype.getViews = function getViews (params) {
     var this$1 = this;
 
@@ -372,7 +431,7 @@ var Database = (function (Base$$1) {
 
 var Functions = (function (Base$$1) {
   function Functions(sdk) {
-    Base$$1.call(this, sdk.options, sdk.token, sdk.browserIdentification);
+    Base$$1.call(this, sdk);
   }
 
   if ( Base$$1 ) Functions.__proto__ = Base$$1;
@@ -405,7 +464,7 @@ var Functions = (function (Base$$1) {
 
 var Storage = (function (Base$$1) {
   function Storage(sdk) {
-    Base$$1.call(this, sdk.options, sdk.token, sdk.browserIdentification);
+    Base$$1.call(this, sdk);
   }
 
   if ( Base$$1 ) Storage.__proto__ = Base$$1;
@@ -420,12 +479,16 @@ var Storage = (function (Base$$1) {
     return this.__call('/__/storage', options).then(function (ret) { return ret.result; })
   };
 
+  Storage.prototype.getUploadUrl = function getUploadUrl () {
+    return getBaseUrl(this.sdk.options) + '/__/storage?token=' + this.__getTokenToUse()
+  };
+
   return Storage;
 }(Base));
 
 var RemoteConfig = (function (Base$$1) {
   function RemoteConfig(sdk) {
-    Base$$1.call(this, sdk.options, sdk.token, sdk.browserIdentification);
+    Base$$1.call(this, sdk);
   }
 
   if ( Base$$1 ) RemoteConfig.__proto__ = Base$$1;
@@ -464,7 +527,59 @@ var PrevioletSDK = function PrevioletSDK (overrideOptions) {
   var this$1 = this;
 
   var vm = this;
+
   var options = Object.assign({}, defaultOptions, overrideOptions);
+  if (options.debug) {
+    console.log('%cPreviolet Javascript SDK instantiated in debug mode', 'color: #CC00FF');
+  }
+
+  if (options.instance && 
+      options.instance == '<%= previolet.options.instance %>' && 
+      options.fallback && 
+      options.fallback.instance) {
+    if (options.debug) {
+      console.log('Using fallback instance', options.fallback.instance);
+    }
+
+    options.instance = options.fallback.instance;
+  }
+
+  if (options.tokenFallback && options.tokenOverride) {
+    throw 'Cannot define both tokenFallback and tokenOverride'
+  }
+
+  if (options.tokenFallback && options.tokenFallback == '<%= previolet.token.guest %>') {
+    if (options.fallback && options.fallback.tokenFallback) {
+      if (options.debug) {
+        console.log('Using fallback tokenFallback', options.fallback.tokenFallback);
+      }
+
+      options.tokenFallback = options.fallback.tokenFallback;
+    } else {
+      if (options.debug) {
+        console.log('No fallback tokenFallback provided, defaulting to false');
+      }
+
+      options.tokenFallback = false;
+    }
+  }
+
+  if (options.tokenOverride && options.tokenOverride == '<%= previolet.token.guest %>') {
+    if (options.fallback && options.fallback.tokenOverride) {
+      if (options.debug) {
+        console.log('Using fallback tokenOverride', options.fallback.tokenOverride);
+      }
+
+      options.tokenOverride = options.fallback.tokenOverride;
+    } else {
+      if (options.debug) {
+        console.log('No fallback tokenOverride provided, defaulting to false');
+      }
+
+      options.tokenOverride = false;
+    }
+  }
+
   var token = false;
   var currentApp = null;
   var currentUser = null;
@@ -507,6 +622,9 @@ var PrevioletSDK = function PrevioletSDK (overrideOptions) {
         if (vm.options.debug) {
           console.log('Logging Out');
         }
+
+        // Remove token from storage
+        vm.token = false;
 
         vm.storageApi.removeItem(vm.options.tokenName);
         vm.storageApi.removeItem(vm.options.applicationStorage);
@@ -764,10 +882,6 @@ var PrevioletSDK = function PrevioletSDK (overrideOptions) {
   var _stored_token = vm.app().token;
   vm.token = _stored_token;
 
-  if (vm.options.debug) {
-    console.log('%c Previolet Javascript SDK instantiated in debug mode', 'color: #CC00FF');
-  }
-
   // Handle browser identification
   if (! vm.browserIdentification) {
       vm.browserIdentification ={
@@ -806,20 +920,24 @@ var PrevioletSDK = function PrevioletSDK (overrideOptions) {
     }
   }
 
+  var __db = new Database(vm).addToErrorChain(vm, vm.__checkError);
   vm.db = function () {
-    return new Database(vm).addToErrorChain(vm, vm.__checkError)
+    return __db
   };
 
+  var __functions = new Functions(vm).addToErrorChain(vm, vm.__checkError);
   vm.functions = function () {
-    return new Functions(vm).addToErrorChain(vm, vm.__checkError)
+    return __functions
   };
 
+  var __storage = new Storage(vm).addToErrorChain(vm, vm.__checkError);
   vm.storage = function () {
-    return new Storage(vm).addToErrorChain(vm, vm.__checkError)
+    return __storage
   };
 
+  var __remoteConfig = new RemoteConfig(vm).addToErrorChain(vm, vm.__checkError);
   vm.remoteConfig = function () {
-    return new RemoteConfig(vm).addToErrorChain(vm, vm.__checkError)
+    return __remoteConfig
   };
 
   vm.user = function () {

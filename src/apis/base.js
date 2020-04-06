@@ -1,11 +1,8 @@
 import { getBaseUrl } from '../utils'
 
 export default class Base {
-  constructor(options, token, bi) {
-    this.options    = options
-    this.token      = token
-    this.bi         = JSON.stringify(bi)
-
+  constructor(sdk) {
+    this.sdk = sdk
     this.errorChain = []
   }
 
@@ -16,11 +13,11 @@ export default class Base {
         func
       })
 
-      if (this.options.debug) {
+      if (this.sdk.options.debug) {
         console.log('Added function to error chain', context, func)
       }
     } else {
-      if (this.options.debug) {
+      if (this.sdk.options.debug) {
         console.log('Cannot add function to error chain, not a function', context, func)
       }
     }
@@ -28,22 +25,51 @@ export default class Base {
     return this
   }
 
+  __getTokenToUse() {
+    var __token = null
+
+    if (this.sdk.token) {
+      if (this.sdk.options.debug) {
+        console.log('Using stored token', this.sdk.token)
+      }
+      __token = this.sdk.token
+    }
+
+    if (! __token && this.sdk.options.tokenFallback) {
+      if (this.sdk.options.debug) {
+        console.log('Token is now the fallback option', this.sdk.options.tokenFallback)
+      }
+      __token = this.sdk.options.tokenFallback
+    }
+
+    if (this.sdk.options.tokenOverride) {
+      if (this.sdk.options.debug) {
+        console.log('Token is now the override option', this.sdk.options.tokenOverride)
+      }
+      __token = this.sdk.options.tokenOverride
+    }
+
+    return __token
+  }
+
   __call(url, options) {
+    var __token = this.__getTokenToUse()
+
     options.headers = Object.assign({}, {
-      'Authorization': this.token,
-      'Identification': btoa(this.bi),
+      'Authorization': __token,
+      'Identification': btoa(this.sdk.browserIdentification),
     })
 
-    var endpoint = getBaseUrl(this.options) + url
-    var req_id = this.options.reqIndex ++
+    var endpoint = getBaseUrl(this.sdk.options) + url
+    var req_id = this.sdk.options.reqIndex ++
 
-    if (this.options.debug) {
-      console.log('> XHR Request (' + req_id + '): ', endpoint, options)
+    if (this.sdk.options.debug) {
+      console.log('> XHR Request (' + req_id + ', ' + __token + '): ', endpoint, options)
     }
 
     return axios(endpoint, options)
     .then(ret => {
-      if (this.options.debug) {
+      if (this.sdk.options.debug) {
         console.log('< XHR Response (' + req_id + ')', ret)
       }
 
@@ -59,10 +85,9 @@ export default class Base {
 
       if (this.errorChain.length) {
         // Propagate error to error chain
-
         this.errorChain.forEach(errorCallback => {
           if (errorCallback.func && typeof errorCallback.func == 'function') {
-            if (this.options.debug) {
+            if (this.sdk.options.debug) {
               console.log('Propagating error', response)
             }
 
@@ -71,7 +96,7 @@ export default class Base {
         })
       } else {
         // Looks like we're handling errors
-        if (this.options.debug) {
+        if (this.sdk.options.debug) {
           console.log('%cBackend error details', 'color: #FF3333', response)
         }
 

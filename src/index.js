@@ -10,7 +10,59 @@ import RemoteConfig from './apis/remote-config'
 export default class PrevioletSDK {
 	constructor (overrideOptions) {
     const vm = this
+
     let options = Object.assign({}, defaultOptions, overrideOptions)
+    if (options.debug) {
+      console.log('%cPreviolet Javascript SDK instantiated in debug mode', 'color: #CC00FF')
+    }
+
+    if (options.instance && 
+        options.instance == '<%= previolet.options.instance %>' && 
+        options.fallback && 
+        options.fallback.instance) {
+      if (options.debug) {
+        console.log('Using fallback instance', options.fallback.instance)
+      }
+
+      options.instance = options.fallback.instance
+    }
+
+    if (options.tokenFallback && options.tokenOverride) {
+      throw 'Cannot define both tokenFallback and tokenOverride'
+    }
+
+    if (options.tokenFallback && options.tokenFallback == '<%= previolet.token.guest %>') {
+      if (options.fallback && options.fallback.tokenFallback) {
+        if (options.debug) {
+          console.log('Using fallback tokenFallback', options.fallback.tokenFallback)
+        }
+
+        options.tokenFallback = options.fallback.tokenFallback
+      } else {
+        if (options.debug) {
+          console.log('No fallback tokenFallback provided, defaulting to false')
+        }
+
+        options.tokenFallback = false
+      }
+    }
+
+    if (options.tokenOverride && options.tokenOverride == '<%= previolet.token.guest %>') {
+      if (options.fallback && options.fallback.tokenOverride) {
+        if (options.debug) {
+          console.log('Using fallback tokenOverride', options.fallback.tokenOverride)
+        }
+
+        options.tokenOverride = options.fallback.tokenOverride
+      } else {
+        if (options.debug) {
+          console.log('No fallback tokenOverride provided, defaulting to false')
+        }
+
+        options.tokenOverride = false
+      }
+    }
+
     let token = false
     let currentApp = null
     let currentUser = null
@@ -53,6 +105,9 @@ export default class PrevioletSDK {
           if (vm.options.debug) {
             console.log('Logging Out')
           }
+
+          // Remove token from storage
+          vm.token = false
 
           vm.storageApi.removeItem(vm.options.tokenName)
           vm.storageApi.removeItem(vm.options.applicationStorage)
@@ -310,10 +365,6 @@ export default class PrevioletSDK {
     var _stored_token = vm.app().token
     vm.token = _stored_token
 
-    if (vm.options.debug) {
-      console.log('%c Previolet Javascript SDK instantiated in debug mode', 'color: #CC00FF')
-    }
-
     // Handle browser identification
     if (! vm.browserIdentification) {
         vm.browserIdentification =  {
@@ -352,20 +403,24 @@ export default class PrevioletSDK {
       }
     }
 
+    var __db = new DatabaseApi(vm).addToErrorChain(vm, vm.__checkError)
     vm.db = () => {
-      return new DatabaseApi(vm).addToErrorChain(vm, vm.__checkError)
+      return __db
     }
 
+    var __functions = new FunctionsApi(vm).addToErrorChain(vm, vm.__checkError)
     vm.functions = () => {
-      return new FunctionsApi(vm).addToErrorChain(vm, vm.__checkError)
+      return __functions
     }
 
+    var __storage = new StorageApi(vm).addToErrorChain(vm, vm.__checkError)
     vm.storage = () => {
-      return new StorageApi(vm).addToErrorChain(vm, vm.__checkError)
+      return __storage
     }
 
+    var __remoteConfig = new RemoteConfig(vm).addToErrorChain(vm, vm.__checkError)
     vm.remoteConfig = () => {
-      return new RemoteConfig(vm).addToErrorChain(vm, vm.__checkError)
+      return __remoteConfig
     }
 
     vm.user = () => {

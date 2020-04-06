@@ -14,4 +14,6 @@ export default {
   sdkVersion: '${PREVIOLET_SDK_VERSION}',
   appVersion: '-',
   defaultConfig: {},
+  tokenOverride: false,
+  tokenFallback: false
 }

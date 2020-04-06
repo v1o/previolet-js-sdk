@@ -2,7 +2,7 @@ import Base from './base'
 
 export default class Functions extends Base {
   constructor(sdk) {
-    super(sdk.options, sdk.token, sdk.browserIdentification)
+    super(sdk)
   }
 
   getAll() {
