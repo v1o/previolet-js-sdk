@@ -1,5 +1,5 @@
 /*!
- * Previolet Javascript SDK v1.0.5
+ * Previolet Javascript SDK v1.0.6
  * https://github.com/previolet/previolet-js-sdk
  * Released under the MIT License.
  */
@@ -20,7 +20,7 @@ function generateRandomNumber(from, to) {
 
 var defaultOptions = {
   baseUrl: 'https://{{instance}}.{{region}}.previolet.com/v1',
-  region: 'eu.east1',
+  region: 'eu.west1',
   guestTokenExpiration: 3600, // in seconds
   userTokenExpiration: 86400 * 10, // 10 days
   storageType: 'localStorage',
@@ -31,7 +31,7 @@ var defaultOptions = {
   userStorage: 'user',
   debug: false,
   reqIndex: 1,
-  sdkVersion: '1.0.5',
+  sdkVersion: '1.0.6',
   appVersion: '-',
   defaultConfig: {},
   tokenOverride: false,
@@ -175,10 +175,15 @@ Base.prototype.__call = function __call (url, options) {
     var this$1 = this;
 
   var __token = this.__getTokenToUse();
+  var __identification = this.sdk.browserIdentification;
+
+  if (this.sdk.options.debug) {
+    console.log('Using Identification', __identification);
+  }
 
   options.headers = Object.assign({}, {
     'Authorization': __token,
-    'Identification': btoa(this.sdk.browserIdentification),
+    'Identification': btoa(JSON.stringify(__identification)),
   });
 
   var endpoint = getBaseUrl(this.sdk.options) + url;
@@ -457,6 +462,10 @@ var Functions = (function (Base$$1) {
     })
   };
 
+  Functions.prototype.getFunctionIdUrl = function getFunctionIdUrl (functionId) {
+    return getBaseUrl(this.sdk.options) + '/__/function/' + functionId + '?token=' + this.__getTokenToUse()
+  };
+
   return Functions;
 }(Base));
 
@@ -704,6 +713,61 @@ var PrevioletSDK = function PrevioletSDK (overrideOptions) {
             }
           }
 
+          return ret.result
+        })
+      },
+
+      forgotPassword: function (name, params) {
+        if (! name) {
+          return Promise.reject(new Error('username required'))
+        }
+
+        var origin = params && params.origin ? params.origin : window.location.origin;
+        var skip_email = params && params.skip_email ? params.skip_email : false;
+
+        var data = JSON.stringify({
+          name: name,
+          origin: origin,
+          skip_email: skip_email,
+        });
+
+        var options = {
+          method: 'POST',
+          data: data,
+        };
+
+        return vm.__call('/__/auth/reset', options).then(function (ret) {
+          vm.__checkError(vm, ret);
+          return ret.result
+        })
+      },
+
+      forgotPasswordConfirmation: function (challenge, confirm_challenge, hash) {
+        if (! challenge) {
+          return Promise.reject(new Error('challenge required'))
+        }
+
+        if (! confirm_challenge) {
+          return Promise.reject(new Error('confirm_challenge required'))
+        }
+
+        if (! hash) {
+          return Promise.reject(new Error('hash required'))
+        }
+
+        var data = JSON.stringify({
+          challenge: challenge,
+          confirm_challenge: confirm_challenge,
+          hash: hash,
+        });
+
+        var options = {
+          method: 'POST',
+          data: data,
+        };
+
+        return vm.__call('/__/auth/reset/confirm', options).then(function (ret) {
+          vm.__checkError(vm, ret);
           return ret.result
         })
       },

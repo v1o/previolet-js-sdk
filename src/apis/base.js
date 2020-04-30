@@ -54,10 +54,15 @@ export default class Base {
 
   __call(url, options) {
     var __token = this.__getTokenToUse()
+    var __identification = this.sdk.browserIdentification
+
+    if (this.sdk.options.debug) {
+      console.log('Using Identification', __identification)
+    }
 
     options.headers = Object.assign({}, {
       'Authorization': __token,
-      'Identification': btoa(this.sdk.browserIdentification),
+      'Identification': btoa(JSON.stringify(__identification)),
     })
 
     var endpoint = getBaseUrl(this.sdk.options) + url

@@ -1,3 +1,4 @@
+import { getBaseUrl } from '../utils'
 import Base from './base'
 
 export default class Functions extends Base {
@@ -24,5 +25,9 @@ export default class Functions extends Base {
     return this.__call('/__/function/' + id, options).then(ret => {
       return ret.result ? ret.result : ret
     })
+  }
+
+  getFunctionIdUrl(functionId) {
+    return getBaseUrl(this.sdk.options) + '/__/function/' + functionId + '?token=' + this.__getTokenToUse()
   }
 }

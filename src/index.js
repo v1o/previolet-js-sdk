@@ -193,6 +193,61 @@ export default class PrevioletSDK {
           })
         },
 
+        forgotPassword: (name, params) => {
+          if (! name) {
+            return Promise.reject(new Error('username required'))
+          }
+
+          var origin = params && params.origin ? params.origin : window.location.origin
+          var skip_email = params && params.skip_email ? params.skip_email : false
+
+          const data = JSON.stringify({
+            name,
+            origin,
+            skip_email,
+          })
+
+          const options = {
+            method: 'POST',
+            data,
+          }
+
+          return vm.__call('/__/auth/reset', options).then(ret => {
+            vm.__checkError(vm, ret)
+            return ret.result
+          })
+        },
+
+        forgotPasswordConfirmation: (challenge, confirm_challenge, hash) => {
+          if (! challenge) {
+            return Promise.reject(new Error('challenge required'))
+          }
+
+          if (! confirm_challenge) {
+            return Promise.reject(new Error('confirm_challenge required'))
+          }
+
+          if (! hash) {
+            return Promise.reject(new Error('hash required'))
+          }
+
+          const data = JSON.stringify({
+            challenge,
+            confirm_challenge,
+            hash,
+          })
+
+          const options = {
+            method: 'POST',
+            data,
+          }
+
+          return vm.__call('/__/auth/reset/confirm', options).then(ret => {
+            vm.__checkError(vm, ret)
+            return ret.result
+          })
+        },
+
         registerWithIdentityProvider: (provider, email, access_token, trigger_login) => {
           access_token = access_token || this.last_access_token
           trigger_login = trigger_login || true
