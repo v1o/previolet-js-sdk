@@ -11,7 +11,7 @@ export default {
   userStorage: 'user',
   debug: false,
   reqIndex: 1,
-  sdkVersion: '${PREVIOLET_SDK_VERSION}',
+  sdkVersion: '__SDK_VERSION__',
   appVersion: '-',
   defaultConfig: {},
   tokenOverride: false,

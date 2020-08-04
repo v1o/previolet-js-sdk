@@ -6,6 +6,12 @@ import DatabaseApi from './apis/database'
 import FunctionsApi from './apis/functions'
 import StorageApi from './apis/storage'
 import RemoteConfig from './apis/remote-config'
+import axios from 'axios/dist/axios.min.js'
+
+if (typeof window.axios == 'undefined') {
+  // add axios as global
+  window.axios = axios
+}
 
 export default class PrevioletSDK {
 	constructor (overrideOptions) {

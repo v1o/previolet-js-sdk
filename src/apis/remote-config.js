@@ -13,7 +13,7 @@ export default class RemoteConfig extends Base {
 
     return this.__call('/__/remote-config', options).then(config => {
       if (typeof config == 'object') {
-        var merge_config = vm.options.defaultConfig
+        var merge_config = vm.sdk.options.defaultConfig
 
         Object.keys(config).forEach(key => {
           merge_config[key] = config[key]
@@ -21,12 +21,12 @@ export default class RemoteConfig extends Base {
 
         return merge_config
       } else {
-        return vm.options.defaultConfig
+        return vm.sdk.options.defaultConfig
       }
     })
   }
 
   defaultConfig(config) {
-    this.options.defaultConfig = config
+    this.sdk.options.defaultConfig = config
   }
 }
