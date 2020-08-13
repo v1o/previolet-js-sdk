@@ -1,4 +1,4 @@
-import { getBaseUrl } from '../utils'
+import { getBaseUrl, getBaseBucketUrl } from '../utils'
 
 export default class Base {
   constructor(sdk) {
@@ -80,6 +80,20 @@ export default class Base {
 
       return ret.data
     })
+    .catch(err => {
+      throw err
+    })
+  }
+
+  __call_log(bucket, options) {
+    var endpoint = getBaseBucketUrl(this.sdk.options, null, bucket).replace('/v1', '/')
+    var req_id = this.sdk.options.reqIndex ++
+
+    if (this.sdk.options.debug) {
+      console.log('> XHR Bucket Request (' + req_id + '): ', endpoint)
+    }
+
+    return axios(endpoint, options)
     .catch(err => {
       throw err
     })

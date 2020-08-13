@@ -12,6 +12,14 @@ export function getBaseUrl(options, instance) {
   return base_url
 }
 
+export function getBaseBucketUrl(options, instance, bucket) {
+  instance = instance || options.instance
+  var base_url = options.baseUrl.replace('{{instance}}', 'log-' + instance + '-' + bucket)
+  base_url = base_url.replace('{{region}}', options.region)
+
+  return base_url
+}
+
 export function generateRandomNumber(from, to) {
   from = from || 100
   to = to || 999

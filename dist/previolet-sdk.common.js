@@ -12,6 +12,12 @@ function getBaseUrl(options, instance) {
   base_url = base_url.replace('{{region}}', options.region);
   return base_url
 }
+function getBaseBucketUrl(options, instance, bucket) {
+  instance = instance || options.instance;
+  var base_url = options.baseUrl.replace('{{instance}}', 'log-' + instance + '-' + bucket);
+  base_url = base_url.replace('{{region}}', options.region);
+  return base_url
+}
 function generateRandomNumber(from, to) {
   from = from || 100;
   to = to || 999;
@@ -176,6 +182,17 @@ class Base {
       }
       return ret.data
     })
+    .catch(err => {
+      throw err
+    })
+  }
+  __call_log(bucket, options) {
+    var endpoint = getBaseBucketUrl(this.sdk.options, null, bucket).replace('/v1', '/');
+    var req_id = this.sdk.options.reqIndex ++;
+    if (this.sdk.options.debug) {
+      console.log('> XHR Bucket Request (' + req_id + '): ', endpoint);
+    }
+    return axios(endpoint, options)
     .catch(err => {
       throw err
     })
@@ -397,6 +414,31 @@ class RemoteConfig extends Base {
   }
   defaultConfig(config) {
     this.sdk.options.defaultConfig = config;
+  }
+}
+
+class Bucket extends Base {
+  constructor(sdk) {
+    super(sdk);
+  }
+  log(bucket, params) {
+    if (! Number.isInteger(bucket)) {
+      if (this.sdk.options.debug) {
+        console.log('Bucket name should be an integer and not', bucket);
+      }
+      return
+    }
+    if (typeof params != 'object') {
+      if (this.sdk.options.debug) {
+        console.log('Bucket params should be send as object and not ' + typeof params, params);
+      }
+      return
+    }
+    const options = {
+      method: 'GET',
+      params,
+    };
+    return this.__call_log(bucket, options)
   }
 }
 
@@ -800,6 +842,10 @@ class PrevioletSDK {
     var __remoteConfig = new RemoteConfig(vm).addToErrorChain(vm, vm.__checkError);
     vm.remoteConfig = () => {
       return __remoteConfig
+    };
+    var __bucket = new Bucket(vm).addToErrorChain(vm, vm.__checkError);
+    vm.bucket = () => {
+      return __bucket
     };
     vm.user = () => {
       return {

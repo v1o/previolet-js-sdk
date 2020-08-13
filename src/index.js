@@ -6,6 +6,7 @@ import DatabaseApi from './apis/database'
 import FunctionsApi from './apis/functions'
 import StorageApi from './apis/storage'
 import RemoteConfig from './apis/remote-config'
+import Bucket from './apis/bucket'
 import axios from 'axios/dist/axios.min.js'
 
 if (typeof window.axios == 'undefined') {
@@ -482,6 +483,11 @@ export default class PrevioletSDK {
     var __remoteConfig = new RemoteConfig(vm).addToErrorChain(vm, vm.__checkError)
     vm.remoteConfig = () => {
       return __remoteConfig
+    }
+
+    var __bucket = new Bucket(vm).addToErrorChain(vm, vm.__checkError)
+    vm.bucket = () => {
+      return __bucket
     }
 
     vm.user = () => {
