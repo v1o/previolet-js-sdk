@@ -1,5 +1,5 @@
 /**
- * Previolet Javascript SDK v1.0.7
+ * Previolet Javascript SDK v1.0.8
  * https://github.com/previolet/previolet-js-sdk
  * Released under the MIT License.
  */
@@ -41,7 +41,7 @@
     userStorage: 'user',
     debug: false,
     reqIndex: 1,
-    sdkVersion: '1.0.7',
+    sdkVersion: '1.0.8',
     appVersion: '-',
     defaultConfig: {},
     tokenOverride: false,
@@ -443,6 +443,30 @@
         params,
       };
       return this.__call_log(bucket, options)
+    }
+  }
+
+  class Trace extends Base {
+    constructor(sdk) {
+      super(sdk);
+    }
+    add(payload) {
+      const vm = this;
+      let __token = vm.__getTokenToUse();
+      let __identification = vm.sdk.browserIdentification;
+      let params = {
+        p: payload,
+        __token,
+        __identification,
+      };
+      if (window.location && window.location.href) {
+        params.u = window.location.href;
+      }
+      const options = {
+        method: 'GET',
+        params
+      };
+      return this.__call_log(0, options)
     }
   }
 
@@ -850,6 +874,10 @@
       var __bucket = new Bucket(vm).addToErrorChain(vm, vm.__checkError);
       vm.bucket = () => {
         return __bucket
+      };
+      var __trace = new Trace(vm).addToErrorChain(vm, vm.__checkError);
+      vm.trace = () => {
+        return __trace
       };
       vm.user = () => {
         return {

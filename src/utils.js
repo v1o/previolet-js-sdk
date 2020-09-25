@@ -23,5 +23,6 @@ export function getBaseBucketUrl(options, instance, bucket) {
 export function generateRandomNumber(from, to) {
   from = from || 100
   to = to || 999
+
   return Math.floor((Math.random() * to) + from)
 }

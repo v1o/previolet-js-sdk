@@ -242,9 +242,6 @@ var router = new VueRouter({
               vm.registerProcess.start = false
             }
           })
-
-          // Register a log entry
-          sdk.bucket().log(1, {url: window.location.href})
         }
       } 
     }
