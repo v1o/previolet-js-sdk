@@ -32,11 +32,13 @@ const config = {
       format: 'es',
       name: 'PrevioletSDK',
       footer: 'export { PrevioletSDK };',
-      plugins: [terser()]
+      plugins: [terser()],
+      exports: 'default'
     },
     {
       file: 'dist/previolet-sdk.common.js',
       format: 'cjs',
+      exports: 'default'
     },
   ],
   plugins: [
