@@ -1,9 +1,9 @@
 {
   "name": "previolet",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Previolet Javascript SDK",
   "main": "dist/previolet-sdk.min.js",
-  "module": "dist/previolet-sdk.common.js",
+  "module": "dist/previolet-sdk.js",
   "unpkg": "dist/previolet-sdk.js",
   "scripts": {
     "dev": "cross-env NODE_ENV=development webpack-dev-server --open --host 0.0.0.0 --config ./webpack.config.js",
@@ -49,7 +49,8 @@
     "remote-config"
   ],
   "dependencies": {
-    "axios": "^0.19.1"
+    "axios": "^0.19.1",
+    "md5": "^2.3.0"
   },
   "bugs": {
     "url": "https://github.com/previolet/previolet-js-sdk/issues"

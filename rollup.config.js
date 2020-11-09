@@ -37,13 +37,12 @@ const config = {
     },
     {
       file: 'dist/previolet-sdk.common.js',
-      format: 'cjs',
-      exports: 'default'
+      format: 'cjs'
     },
   ],
   plugins: [
-    commonjs(), 
     resolve(), 
+    commonjs(), 
     json(), 
     cleanup({ comments: 'none' }),
     banner('Previolet Javascript SDK v<%= pkg.version %>\nhttps://github.com/previolet/previolet-js-sdk\nReleased under the MIT License.'),
