@@ -1,11 +1,17 @@
+import axios from 'axios'
+
 const fakeDocument = {
   createElement() { },
 }
 
 const fakeWindow = {
+  btoa() { },
   atob() { },
+  setInterval() { },
   open() { },
-  location: {},
+  location: {
+    origin: '',
+  },
   localStorage: {
     setItem() { },
     getItem() { },
@@ -18,10 +24,25 @@ const fakeWindow = {
   },
 }
 
-export const $document = (typeof document !== undefined)
-  ? document
-  : fakeDocument
+const fakeNavigator = {
+  userAgent: null,
+  userLanguage: null,
+  language: null,
+  platform: null,
+}
 
-export const $window = (typeof window !== undefined)
-  ? window
-  : fakeWindow
+export const $document = typeof document !== 'undefined' ? document : fakeDocument
+export const $window = typeof window !== 'undefined' ? window : fakeWindow
+export const $navigator = typeof navigator !== 'undefined' ? navigator : fakeNavigator
+
+const $axios = axios
+
+function setAxiosDefaultAdapter(newAdapter) {
+  $axios.defaults.adapter = newAdapter
+}
+
+if (typeof overrideAxiosDefaultAdapter !== 'undefined') {
+  setAxiosDefaultAdapter(overrideAxiosDefaultAdapter)
+}
+
+export { $axios, setAxiosDefaultAdapter }

@@ -1,12 +1,10 @@
-import { $window } from '../globals'
+import { $window, $document } from '../globals'
 import md5 from 'md5'
 
 class LocalStorage {
   constructor(namespace) {
     this.namespace = namespace || null
-    this.origin = window 
-                    && window.location 
-                    && window.location.origin ? md5(window.location.origin).substr(0, 8) : null
+    this.origin = $window.location && $window.location.origin ? md5($window.location.origin).substr(0, 8) : null
   }
 
   setItem(key, value) {

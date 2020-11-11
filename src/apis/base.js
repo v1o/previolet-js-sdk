@@ -1,4 +1,5 @@
 import { getBaseUrl, getBaseBucketUrl } from '../utils'
+import { $window, $document, $axios } from '../globals'
 
 export default class Base {
   constructor(sdk) {
@@ -14,7 +15,7 @@ export default class Base {
       })
 
       if (this.sdk.options.debug) {
-        console.log('Added function to error chain', context, func)
+        // console.log('Added function to error chain', context, func)
       }
     } else {
       if (this.sdk.options.debug) {
@@ -62,7 +63,7 @@ export default class Base {
 
     options.headers = Object.assign({}, {
       'Authorization': __token,
-      'Identification': btoa(JSON.stringify(__identification)),
+      'Identification': $window.btoa(JSON.stringify(__identification)),
     })
 
     var endpoint = getBaseUrl(this.sdk.options) + url
@@ -72,7 +73,7 @@ export default class Base {
       console.log('> XHR Request (' + req_id + ', ' + __token + '): ', endpoint, options)
     }
 
-    return axios(endpoint, options)
+    return $axios(endpoint, options)
     .then(ret => {
       if (this.sdk.options.debug) {
         console.log('< XHR Response (' + req_id + ')', ret)
@@ -81,6 +82,11 @@ export default class Base {
       return ret.data
     })
     .catch(err => {
+      if (err.message) {
+        console.log('Error', err.message)
+      } else {
+        console.log('Error', err)
+      }
       throw err
     })
   }
@@ -93,7 +99,7 @@ export default class Base {
       console.log('> XHR Bucket Request (' + req_id + '): ', endpoint)
     }
 
-    return axios(endpoint, options)
+    return $axios(endpoint, options)
     .catch(err => {
       throw err
     })

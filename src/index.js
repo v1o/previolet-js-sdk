@@ -1,4 +1,5 @@
 import { getBaseUrl, generateRandomNumber } from './utils'
+import { $window, $navigator, $axios, setAxiosDefaultAdapter } from './globals'
 import defaultOptions from './options'
 import apiErrors from './errors'
 import StorageFactory from './storage'
@@ -8,12 +9,6 @@ import StorageApi from './apis/storage'
 import RemoteConfig from './apis/remote-config'
 import Bucket from './apis/bucket'
 import Trace from './apis/trace'
-import axios from 'axios/dist/axios.min.js'
-
-if (typeof window.axios == 'undefined') {
-  // add axios as global
-  window.axios = axios
-}
 
 export default class PrevioletSDK {
 	constructor (overrideOptions) {
@@ -69,6 +64,10 @@ export default class PrevioletSDK {
 
         options.tokenOverride = false
       }
+    }
+
+    if (null !== options.xhrAdapter) {
+      setAxiosDefaultAdapter(options.xhrAdapter)
     }
 
     let token = false
@@ -390,7 +389,7 @@ export default class PrevioletSDK {
         },
         set(value) {
           currentApp = value
-          vm.storageApi.setItem(options.applicationStorage, btoa(JSON.stringify(value)))
+          vm.storageApi.setItem(options.applicationStorage, $window.btoa(JSON.stringify(value)))
         }
       },
 
@@ -400,7 +399,7 @@ export default class PrevioletSDK {
         },
         set(value) {
           currentUser = value
-          vm.storageApi.setItem(options.userStorage, btoa(JSON.stringify(value)))
+          vm.storageApi.setItem(options.userStorage, $window.btoa(JSON.stringify(value)))
         }
       },
 
@@ -412,7 +411,7 @@ export default class PrevioletSDK {
           value.ts = value.ts || Date.now()
           value.rnd = value.rnd || generateRandomNumber(10000, 99999)
 
-          vm.storageApi.setItem(options.browserIdentification, btoa(JSON.stringify(value)))
+          vm.storageApi.setItem(options.browserIdentification, $window.btoa(JSON.stringify(value)))
         }
       }
     })
@@ -431,9 +430,9 @@ export default class PrevioletSDK {
     // Handle browser identification
     if (! vm.browserIdentification) {
         vm.browserIdentification =  {
-        ua: navigator.userAgent,
-        lang: navigator.language || navigator.userLanguage,
-        plat: navigator.platform,
+        ua: $navigator.userAgent,
+        lang: $navigator.language || $navigator.userLanguage,
+        plat: $navigator.platform,
         vsdk: vm.options.sdkVersion,
         vapp: vm.options.appVersion,
       }
@@ -448,9 +447,9 @@ export default class PrevioletSDK {
       }
 
       var match = {
-        ua: navigator.userAgent,
-        lang: navigator.language || navigator.userLanguage,
-        plat: navigator.platform,
+        ua: $navigator.userAgent,
+        lang: $navigator.language || $navigator.userLanguage,
+        plat: $navigator.platform,
         vsdk: vm.options.sdkVersion,
         vapp: vm.options.appVersion,
         ts: vm.browserIdentification.ts,
@@ -590,7 +589,7 @@ export default class PrevioletSDK {
       console.log('> XHR Request (' + req_id + ')', endpoint, options)
     }
 
-    return axios(endpoint, options)
+    return $axios(endpoint, options)
       .then(ret => {
         if (this.options.debug) {
           console.log('< XHR Response (' + req_id + ')', ret)
@@ -611,7 +610,7 @@ export default class PrevioletSDK {
 
     if (_storage) {
       try {
-        _storage_data = JSON.parse(atob(_storage))
+        _storage_data = JSON.parse($window.atob(_storage))
       } catch (e) {
       }
     }

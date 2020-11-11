@@ -15,5 +15,6 @@ export default {
   appVersion: '-',
   defaultConfig: {},
   tokenOverride: false,
+  xhrAdapter: null,
   tokenFallback: false
 }
