@@ -1,5 +1,5 @@
 /**
- * Previolet Javascript SDK v1.0.12
+ * Previolet Javascript SDK v1.0.13
  * https://github.com/previolet/previolet-js-sdk
  * Released under the MIT License.
  */
@@ -1102,7 +1102,7 @@ var defaultOptions = {
   userStorage: 'user',
   debug: false,
   reqIndex: 1,
-  sdkVersion: '1.0.12',
+  sdkVersion: '1.0.13',
   appVersion: '-',
   defaultConfig: {},
   tokenOverride: false,
@@ -2289,3 +2289,4 @@ class PrevioletSDK {
 }(typeof self !== 'undefined' ? self : this, function () {
     return PrevioletSDK;
 }));
+export default PrevioletSDK;

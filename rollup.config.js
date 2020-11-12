@@ -16,7 +16,7 @@ const config = {
       file: pkg.module,
       format: 'umd',
       name: 'PrevioletSDK',
-      exports: 'named'
+      exports: 'named',
     },
     {
       file: pkg.main,
@@ -46,6 +46,7 @@ const config = {
       file: 'dist/previolet-sdk.es2015.js',
       format: 'es',
       name: 'PrevioletSDK',
+      footer: 'export default PrevioletSDK;',
       exports: 'named'
     },
   ],
