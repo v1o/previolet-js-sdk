@@ -1,5 +1,5 @@
 /**
- * Previolet Javascript SDK v1.0.11
+ * Previolet Javascript SDK v1.0.12
  * https://github.com/previolet/previolet-js-sdk
  * Released under the MIT License.
  */
@@ -1055,8 +1055,8 @@ axios_1.default = _default;
 var axios$1 = axios_1;
 
 const fakeWindow = {
-  btoa() { },
-  atob() { },
+  btoa(a) { return a },
+  atob(a) { return a },
   setInterval() { },
   open() { },
   location: {
@@ -1102,7 +1102,7 @@ var defaultOptions = {
   userStorage: 'user',
   debug: false,
   reqIndex: 1,
-  sdkVersion: '1.0.11',
+  sdkVersion: '1.0.12',
   appVersion: '-',
   defaultConfig: {},
   tokenOverride: false,
@@ -1538,7 +1538,7 @@ class Database extends Base {
     };
     return this.__call('/__/index', options).then(ret => {
       this.__checkError(this, ret);
-      return ret.result.objects
+      return ret && ret.result && ret.result.objects ? ret.result.objects : []
     })
   }
   select(database) {
@@ -1842,7 +1842,8 @@ class PrevioletSDK {
         },
         logout: (params) => {
           if (! vm.auth().isAuthenticated()) {
-            return Promise.reject(new Error('There is no authenticated user'))
+            if (this.options.debug) console.log('There is no authenticated user');
+            return false
           }
           params = params || {};
           params.preventUserStatePropagation = params.preventUserStatePropagation || false;
@@ -1853,9 +1854,7 @@ class PrevioletSDK {
             method: 'DELETE',
             data
           };
-          if (vm.options.debug) {
-            console.log('Logging Out');
-          }
+          if (vm.options.debug) console.log('Logging Out');
           vm.token = false;
           vm.storageApi.removeItem(vm.options.tokenName);
           vm.storageApi.removeItem(vm.options.applicationStorage);
@@ -2279,6 +2278,14 @@ class PrevioletSDK {
     }
   }
 }
-
-export default PrevioletSDK;
-export { PrevioletSDK };
+(function (root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        define([], factory);
+    } else if (typeof module === 'object' && module.exports) {
+        module.exports = factory();
+    } else {
+        root.PrevioletSDK = factory();
+  }
+}(typeof self !== 'undefined' ? self : this, function () {
+    return PrevioletSDK;
+}));

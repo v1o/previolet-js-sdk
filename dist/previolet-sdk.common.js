@@ -1,14 +1,13 @@
 /**
- * Previolet Javascript SDK v1.0.11
+ * Previolet Javascript SDK v1.0.12
  * https://github.com/previolet/previolet-js-sdk
  * Released under the MIT License.
  */
 
-(function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+(function (factory) {
   typeof define === 'function' && define.amd ? define(factory) :
-  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.PrevioletSDK = factory());
-}(this, (function () { 'use strict';
+  factory();
+}((function () { 'use strict';
 
   function getBaseUrl(options, instance) {
     instance = instance || options.instance;
@@ -1061,8 +1060,8 @@
   var axios$1 = axios_1;
 
   const fakeWindow = {
-    btoa() { },
-    atob() { },
+    btoa(a) { return a },
+    atob(a) { return a },
     setInterval() { },
     open() { },
     location: {
@@ -1108,7 +1107,7 @@
     userStorage: 'user',
     debug: false,
     reqIndex: 1,
-    sdkVersion: '1.0.11',
+    sdkVersion: '1.0.12',
     appVersion: '-',
     defaultConfig: {},
     tokenOverride: false,
@@ -1544,7 +1543,7 @@
       };
       return this.__call('/__/index', options).then(ret => {
         this.__checkError(this, ret);
-        return ret.result.objects
+        return ret && ret.result && ret.result.objects ? ret.result.objects : []
       })
     }
     select(database) {
@@ -1848,7 +1847,8 @@
           },
           logout: (params) => {
             if (! vm.auth().isAuthenticated()) {
-              return Promise.reject(new Error('There is no authenticated user'))
+              if (this.options.debug) console.log('There is no authenticated user');
+              return false
             }
             params = params || {};
             params.preventUserStatePropagation = params.preventUserStatePropagation || false;
@@ -1859,9 +1859,7 @@
               method: 'DELETE',
               data
             };
-            if (vm.options.debug) {
-              console.log('Logging Out');
-            }
+            if (vm.options.debug) console.log('Logging Out');
             vm.token = false;
             vm.storageApi.removeItem(vm.options.tokenName);
             vm.storageApi.removeItem(vm.options.applicationStorage);
@@ -2285,7 +2283,16 @@
       }
     }
   }
-
-  return PrevioletSDK;
+  (function (root, factory) {
+      if (typeof define === 'function' && define.amd) {
+          define([], factory);
+      } else if (typeof module === 'object' && module.exports) {
+          module.exports = factory();
+      } else {
+          root.PrevioletSDK = factory();
+    }
+  }(typeof self !== 'undefined' ? self : this, function () {
+      return PrevioletSDK;
+  }));
 
 })));

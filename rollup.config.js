@@ -10,43 +10,43 @@ import pkg from './package.json'
 
 const config = {
   input: 'src/index.js',
+  context: 'this',
   output: [
     {
       file: pkg.module,
       format: 'umd',
       name: 'PrevioletSDK',
-      exports: 'default'
+      exports: 'named'
     },
     {
       file: pkg.main,
       format: 'cjs',
-      exports: 'default'
+      exports: 'named'
     },
     {
       file: 'demo/previolet-sdk.js',
       format: 'iife',
       name: 'PrevioletSDK',
-      exports: 'default'
+      exports: 'named'
     },
     {
       file: 'dist/previolet-sdk.js',
       format: 'iife',
       name: 'PrevioletSDK',
-      exports: 'default'
+      exports: 'named'
     },
     {
       file: 'dist/previolet-sdk.min.js',
       format: 'iife',
       name: 'PrevioletSDK',
       plugins: [terser()],
-      exports: 'default'
+      exports: 'named'
     },
     {
       file: 'dist/previolet-sdk.es2015.js',
       format: 'es',
       name: 'PrevioletSDK',
-      footer: 'export { PrevioletSDK };',
-      exports: 'default'
+      exports: 'named'
     },
   ],
   plugins: [
@@ -54,7 +54,7 @@ const config = {
       mainFields: ['main', 'module'],
       browser: true,
       preferBuiltins: true,
-      dedupe: [ 'axios' ],
+      module: false,
     }), 
     commonjs(), 
     json(), 

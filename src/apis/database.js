@@ -13,7 +13,7 @@ export default class Database extends Base {
 
     return this.__call('/__/index', options).then(ret => {
       this.__checkError(this, ret)
-      return ret.result.objects
+      return ret && ret.result && ret.result.objects ? ret.result.objects : []
     })
   }
 

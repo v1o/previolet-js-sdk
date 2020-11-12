@@ -5,8 +5,8 @@ const fakeDocument = {
 }
 
 const fakeWindow = {
-  btoa() { },
-  atob() { },
+  btoa(a) { return a },
+  atob(a) { return a },
   setInterval() { },
   open() { },
   location: {
@@ -38,6 +38,7 @@ export const $navigator = typeof navigator !== 'undefined' ? navigator : fakeNav
 const $axios = axios
 
 function setAxiosDefaultAdapter(newAdapter) {
+  // https://github.com/axios/axios/issues/456
   $axios.defaults.adapter = newAdapter
 }
 

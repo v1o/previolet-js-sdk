@@ -10,7 +10,7 @@ import RemoteConfig from './apis/remote-config'
 import Bucket from './apis/bucket'
 import Trace from './apis/trace'
 
-export default class PrevioletSDK {
+class PrevioletSDK {
 	constructor (overrideOptions) {
     const vm = this
 
@@ -94,7 +94,8 @@ export default class PrevioletSDK {
 
         logout: (params) => {
           if (! vm.auth().isAuthenticated()) {
-            return Promise.reject(new Error('There is no authenticated user'))
+            if (this.options.debug) console.log('There is no authenticated user')
+            return false
           }
 
           params = params || {}
@@ -109,9 +110,7 @@ export default class PrevioletSDK {
             data
           }
 
-          if (vm.options.debug) {
-            console.log('Logging Out')
-          }
+          if (vm.options.debug) console.log('Logging Out')
 
           // Remove token from storage
           vm.token = false
@@ -637,3 +636,26 @@ export default class PrevioletSDK {
     }
   }
 }
+
+// UMD (Universal Module Definition)
+// https://github.com/umdjs/umd/blob/master/templates/returnExports.js
+(function (root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        // AMD. Register as an anonymous module.
+        define([], factory);
+    } else if (typeof module === 'object' && module.exports) {
+        // Node. Does not work with strict CommonJS, but
+        // only CommonJS-like environments that support module.exports,
+        // like Node.
+        module.exports = factory();
+    } else {
+        // Browser globals (root is window)
+        root.PrevioletSDK = factory();
+  }
+}(typeof self !== 'undefined' ? self : this, function () {
+
+    // Just return a value to define the module export.
+    // This example returns an object, but the module
+    // can return a function as the exported value.
+    return PrevioletSDK;
+}))
