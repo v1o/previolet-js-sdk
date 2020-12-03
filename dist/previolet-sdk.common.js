@@ -1,5 +1,5 @@
 /**
- * Previolet Javascript SDK v1.0.14
+ * Previolet Javascript SDK v1.0.15
  * https://github.com/previolet/previolet-js-sdk
  * Released under the MIT License.
  */
@@ -1107,7 +1107,7 @@
     userStorage: 'user',
     debug: false,
     reqIndex: 1,
-    sdkVersion: '1.0.14',
+    sdkVersion: '1.0.15',
     appVersion: '-',
     defaultConfig: {},
     tokenOverride: false,
