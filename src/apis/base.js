@@ -129,4 +129,8 @@ export default class Base {
       }
     }
   }
+
+  __sleep (ms) {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
 }

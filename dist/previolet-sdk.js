@@ -1,5 +1,5 @@
 /**
- * Previolet Javascript SDK v1.0.13
+ * Previolet Javascript SDK v1.0.14
  * https://github.com/previolet/previolet-js-sdk
  * Released under the MIT License.
  */
@@ -1105,7 +1105,7 @@
     userStorage: 'user',
     debug: false,
     reqIndex: 1,
-    sdkVersion: '1.0.13',
+    sdkVersion: '1.0.14',
     appVersion: '-',
     defaultConfig: {},
     tokenOverride: false,
@@ -1528,6 +1528,9 @@
         }
       }
     }
+    __sleep (ms) {
+      return new Promise(resolve => setTimeout(resolve, ms))
+    }
   }
 
   class Database extends Base {
@@ -1653,6 +1656,19 @@
     getDistinct(field, params) {
     }
     getDistinctCount(field, params) {
+    }
+    async *iterator(params) {
+      let response;
+      let _offset = 0;
+      let _limit  = 10;
+      do {
+        response = await this.get({ ...params, _offset, _limit });
+        for (const res of response) {
+          yield res;
+        }
+        _offset += _limit;
+        await this.__sleep(1000);
+      } while (response.length == _limit)
     }
     __callDatabase(options, append) {
       append = append || '';

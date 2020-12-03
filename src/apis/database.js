@@ -162,6 +162,21 @@ export default class Database extends Base {
     // Implementation to follow
   }
 
+  async *iterator(params) {
+    let response
+    let _offset = 0
+    let _limit  = 10
+
+    do {
+      response = await this.get({ ...params, _offset, _limit })
+      for (const res of response) {
+        yield res
+      }
+      _offset += _limit
+      await this.__sleep(1000)
+    } while (response.length == _limit)
+  }
+
   __callDatabase(options, append) {
     append = append || ''
 
