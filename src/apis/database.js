@@ -93,6 +93,20 @@ export default class Database extends Base {
     })
   }
 
+  updateByFieldValue(field, value, data) {
+    data = data || {}
+
+    const options = {
+      method: 'PUT',
+      data,
+    }
+
+    return this.__callDatabase(options, '/' + encodeURIComponent(field) + '/' + encodeURIComponent(value)).then(ret => {
+      this.__checkError(this, ret)
+      return ret.result ? ret.result : ret
+    })
+  }
+
   delete(id) {
     const options = {
       method: 'DELETE',

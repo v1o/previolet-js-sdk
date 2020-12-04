@@ -1,5 +1,5 @@
 /**
- * Previolet Javascript SDK v1.0.15
+ * Previolet Javascript SDK v1.0.16
  * https://github.com/previolet/previolet-js-sdk
  * Released under the MIT License.
  */
@@ -1107,7 +1107,7 @@
     userStorage: 'user',
     debug: false,
     reqIndex: 1,
-    sdkVersion: '1.0.15',
+    sdkVersion: '1.0.16',
     appVersion: '-',
     defaultConfig: {},
     tokenOverride: false,
@@ -1605,6 +1605,17 @@
         data,
       };
       return this.__callDatabase(options, '/' + id).then(ret => {
+        this.__checkError(this, ret);
+        return ret.result ? ret.result : ret
+      })
+    }
+    updateByFieldValue(field, value, data) {
+      data = data || {};
+      const options = {
+        method: 'PUT',
+        data,
+      };
+      return this.__callDatabase(options, '/' + encodeURIComponent(field) + '/' + encodeURIComponent(value)).then(ret => {
         this.__checkError(this, ret);
         return ret.result ? ret.result : ret
       })
