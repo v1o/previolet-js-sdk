@@ -1,4 +1,5 @@
 import Base from './base'
+import { urlSerializeObject } from '../utils'
 
 export default class Database extends Base {
   constructor(sdk) {
@@ -36,15 +37,20 @@ export default class Database extends Base {
     })
   }
 
-  get(params) {
+  get(params, fieldProjection) {
+    let append = ''
     params = params || {}
+
+    if (fieldProjection) {
+      append = '?' + urlSerializeObject(fieldProjection, '_fields')
+    }
 
     const options = {
       method: 'GET',
       params,
     }
 
-    return this.__callDatabase(options).then(ret => {
+    return this.__callDatabase(options, append).then(ret => {
       this.__checkError(this, ret)
       return ret.result ? ret.result : []
     })
@@ -176,13 +182,13 @@ export default class Database extends Base {
     // Implementation to follow
   }
 
-  async *iterator(params) {
+  async *iterator(params, fieldProjection) {
     let response
     let _offset = 0
     let _limit  = 10
 
     do {
-      response = await this.get({ ...params, _offset, _limit })
+      response = await this.get({ ...params, _offset, _limit }, fieldProjection)
       for (const res of response) {
         yield res
       }

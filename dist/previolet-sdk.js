@@ -1,5 +1,5 @@
 /**
- * Previolet Javascript SDK v1.0.16
+ * Previolet Javascript SDK v1.0.17
  * https://github.com/previolet/previolet-js-sdk
  * Released under the MIT License.
  */
@@ -23,6 +23,18 @@
     from = from || 100;
     to = to || 999;
     return Math.floor((Math.random() * to) + from)
+  }
+  function urlSerializeObject (obj, prefix) {
+    var str = [], p;
+    for (p in obj) {
+      if (obj.hasOwnProperty(p)) {
+        var k = prefix ? prefix + "[" + p + "]" : p, v = obj[p];
+        str.push((v !== null && typeof v === "object") ?
+          urlSerializeObject(v, k) :
+          encodeURIComponent(k) + "=" + encodeURIComponent(v));
+      }
+    }
+    return str.join("&")
   }
 
   var bind = function bind(fn, thisArg) {
@@ -1105,7 +1117,7 @@
     userStorage: 'user',
     debug: false,
     reqIndex: 1,
-    sdkVersion: '1.0.16',
+    sdkVersion: '1.0.17',
     appVersion: '-',
     defaultConfig: {},
     tokenOverride: false,
@@ -1562,13 +1574,17 @@
         return ret.result ? ret.result : ret
       })
     }
-    get(params) {
+    get(params, fieldProjection) {
+      let append = '';
       params = params || {};
+      if (fieldProjection) {
+        append = '?' + urlSerializeObject(fieldProjection, '_fields');
+      }
       const options = {
         method: 'GET',
         params,
       };
-      return this.__callDatabase(options).then(ret => {
+      return this.__callDatabase(options, append).then(ret => {
         this.__checkError(this, ret);
         return ret.result ? ret.result : []
       })
@@ -1668,12 +1684,12 @@
     }
     getDistinctCount(field, params) {
     }
-    async *iterator(params) {
+    async *iterator(params, fieldProjection) {
       let response;
       let _offset = 0;
       let _limit  = 10;
       do {
-        response = await this.get({ ...params, _offset, _limit });
+        response = await this.get({ ...params, _offset, _limit }, fieldProjection);
         for (const res of response) {
           yield res;
         }

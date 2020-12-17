@@ -26,3 +26,16 @@ export function generateRandomNumber(from, to) {
 
   return Math.floor((Math.random() * to) + from)
 }
+
+export function urlSerializeObject (obj, prefix) {
+  var str = [], p
+  for (p in obj) {
+    if (obj.hasOwnProperty(p)) {
+      var k = prefix ? prefix + "[" + p + "]" : p, v = obj[p]
+      str.push((v !== null && typeof v === "object") ?
+        urlSerializeObject(v, k) :
+        encodeURIComponent(k) + "=" + encodeURIComponent(v))
+    }
+  }
+  return str.join("&")
+}
