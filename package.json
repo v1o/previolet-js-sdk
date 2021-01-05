@@ -51,7 +51,7 @@
     "remote-config"
   ],
   "dependencies": {
-    "axios": "^0.19.1",
+    "axios": "^0.21.1",
     "md5": "^2.3.0"
   },
   "bugs": {
