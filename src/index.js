@@ -359,6 +359,9 @@ class PrevioletSDK {
       options: {
         get() {
           return options
+        },
+        set(value) {
+          options = value
         }
       },
 
@@ -426,15 +429,17 @@ class PrevioletSDK {
     var _stored_token = vm.app().token
     vm.token = _stored_token
 
+    let baseline_identification = {
+        ua: $navigator.userAgent,
+      lang: $navigator.language || $navigator.userLanguage,
+      plat: $navigator.platform,
+      vsdk: vm.options.sdkVersion,
+      vapp: vm.options.appVersion,
+    }
+
     // Handle browser identification
     if (! vm.browserIdentification) {
-        vm.browserIdentification =  {
-        ua: $navigator.userAgent,
-        lang: $navigator.language || $navigator.userLanguage,
-        plat: $navigator.platform,
-        vsdk: vm.options.sdkVersion,
-        vapp: vm.options.appVersion,
-      }
+        vm.browserIdentification = { ...baseline_identification }
 
       if (vm.options.debug) {
         console.log('Generating browser identification', vm.browserIdentification)
@@ -446,13 +451,9 @@ class PrevioletSDK {
       }
 
       var match = {
-        ua: $navigator.userAgent,
-        lang: $navigator.language || $navigator.userLanguage,
-        plat: $navigator.platform,
-        vsdk: vm.options.sdkVersion,
-        vapp: vm.options.appVersion,
-        ts: vm.browserIdentification.ts,
-        rnd: vm.browserIdentification.rnd,
+          ...baseline_identification,
+          ts: vm.browserIdentification.ts,
+         rnd: vm.browserIdentification.rnd,
       }
 
       if (JSON.stringify(match) != JSON.stringify(vm.browserIdentification)) {
@@ -521,6 +522,15 @@ class PrevioletSDK {
         return vm.options.defaultConfig
       }
     })
+  }
+
+  updateOptions(overrideOptions) {
+    const vm = this
+    vm.options = Object.assign({}, vm.options, overrideOptions)
+
+    if (vm.options.debug) {
+      console.log('Updated SDK Options', vm.options)
+    }
   }
 
   __propagateUserState(userState) {

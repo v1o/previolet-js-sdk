@@ -27,7 +27,7 @@ export function generateRandomNumber(from, to) {
   return Math.floor((Math.random() * to) + from)
 }
 
-export function urlSerializeObject (obj, prefix) {
+export function urlSerializeObject(obj, prefix) {
   var str = [], p
   for (p in obj) {
     if (obj.hasOwnProperty(p)) {

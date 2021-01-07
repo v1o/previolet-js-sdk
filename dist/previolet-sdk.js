@@ -1,5 +1,5 @@
 /**
- * Previolet Javascript SDK v1.0.17
+ * Previolet Javascript SDK v1.0.18
  * https://github.com/previolet/previolet-js-sdk
  * Released under the MIT License.
  */
@@ -24,7 +24,7 @@
     to = to || 999;
     return Math.floor((Math.random() * to) + from)
   }
-  function urlSerializeObject (obj, prefix) {
+  function urlSerializeObject(obj, prefix) {
     var str = [], p;
     for (p in obj) {
       if (obj.hasOwnProperty(p)) {
@@ -1117,7 +1117,7 @@
     userStorage: 'user',
     debug: false,
     reqIndex: 1,
-    sdkVersion: '1.0.17',
+    sdkVersion: '1.0.18',
     appVersion: '-',
     defaultConfig: {},
     tokenOverride: false,
@@ -2097,6 +2097,9 @@
         options: {
           get() {
             return options
+          },
+          set(value) {
+            options = value;
           }
         },
         token: {
@@ -2154,14 +2157,15 @@
       };
       var _stored_token = vm.app().token;
       vm.token = _stored_token;
-      if (! vm.browserIdentification) {
-          vm.browserIdentification =  {
+      let baseline_identification = {
           ua: $navigator.userAgent,
-          lang: $navigator.language || $navigator.userLanguage,
-          plat: $navigator.platform,
-          vsdk: vm.options.sdkVersion,
-          vapp: vm.options.appVersion,
-        };
+        lang: $navigator.language || $navigator.userLanguage,
+        plat: $navigator.platform,
+        vsdk: vm.options.sdkVersion,
+        vapp: vm.options.appVersion,
+      };
+      if (! vm.browserIdentification) {
+          vm.browserIdentification = { ...baseline_identification };
         if (vm.options.debug) {
           console.log('Generating browser identification', vm.browserIdentification);
         }
@@ -2170,13 +2174,9 @@
           console.log('Browser identification exists', vm.browserIdentification);
         }
         var match = {
-          ua: $navigator.userAgent,
-          lang: $navigator.language || $navigator.userLanguage,
-          plat: $navigator.platform,
-          vsdk: vm.options.sdkVersion,
-          vapp: vm.options.appVersion,
-          ts: vm.browserIdentification.ts,
-          rnd: vm.browserIdentification.rnd,
+            ...baseline_identification,
+            ts: vm.browserIdentification.ts,
+           rnd: vm.browserIdentification.rnd,
         };
         if (JSON.stringify(match) != JSON.stringify(vm.browserIdentification)) {
           if (vm.options.debug) {
@@ -2232,6 +2232,13 @@
           return vm.options.defaultConfig
         }
       })
+    }
+    updateOptions(overrideOptions) {
+      const vm = this;
+      vm.options = Object.assign({}, vm.options, overrideOptions);
+      if (vm.options.debug) {
+        console.log('Updated SDK Options', vm.options);
+      }
     }
     __propagateUserState(userState) {
       const vm = this;
