@@ -1,6 +1,6 @@
 {
   "name": "previolet",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "description": "Previolet Javascript SDK",
   "main": "dist/previolet-sdk.js",
   "module": "dist/previolet-sdk.common.js",
