@@ -3,6 +3,20 @@ import Base from './base'
 export default class Bucket extends Base {
   constructor(sdk) {
     super(sdk)
+    this.currentBucket = null
+  }
+
+  select(bucket) {
+    this.currentBucket = bucket
+    return this
+  }
+
+  add(params) {
+    if (null === this.currentBucket) {
+      return Promise.reject(new Error('Please select a bucket'))
+    }
+
+    return this.log(this.currentBucket, params)
   }
 
   log(bucket, params) {

@@ -1,5 +1,5 @@
 /**
- * Previolet Javascript SDK v1.0.19
+ * Previolet Javascript SDK v1.0.20
  * https://github.com/previolet/previolet-js-sdk
  * Released under the MIT License.
  */
@@ -1117,7 +1117,7 @@
     userStorage: 'user',
     debug: false,
     reqIndex: 1,
-    sdkVersion: '1.0.19',
+    sdkVersion: '1.0.20',
     appVersion: '-',
     defaultConfig: {},
     tokenOverride: false,
@@ -1784,6 +1784,17 @@
   class Bucket extends Base {
     constructor(sdk) {
       super(sdk);
+      this.currentBucket = null;
+    }
+    select(bucket) {
+      this.currentBucket = bucket;
+      return this
+    }
+    add(params) {
+      if (null === this.currentBucket) {
+        return Promise.reject(new Error('Please select a bucket'))
+      }
+      return this.log(this.currentBucket, params)
     }
     log(bucket, params) {
       if (! Number.isInteger(bucket)) {
