@@ -536,7 +536,7 @@ class PrevioletSDK {
   __propagateUserState(userState) {
     const vm = this
 
-    vm.changeHooks.forEach((func) => {
+    vm.changeHooks.forEach(func => {
       if (vm.options.debug) {
         console.log('Triggering onAuthStateChanged callback', userState)
       }

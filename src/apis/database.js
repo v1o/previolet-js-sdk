@@ -124,6 +124,17 @@ export default class Database extends Base {
     })
   }
 
+  deleteByFieldValue(field, value) {
+    const options = {
+      method: 'DELETE',
+    }
+
+    return this.__callDatabase(options, '/' + encodeURIComponent(field) + '/' + encodeURIComponent(value)).then(ret => {
+      this.__checkError(this, ret)
+      return ret.result ? ret.result : ret
+    })
+  }
+
   fieldExists(name) {
     // Implementation to follow
   }

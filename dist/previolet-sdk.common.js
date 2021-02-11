@@ -1645,6 +1645,15 @@
         return ret.result ? ret.result : ret
       })
     }
+    deleteByFieldValue(field, value) {
+      const options = {
+        method: 'DELETE',
+      };
+      return this.__callDatabase(options, '/' + encodeURIComponent(field) + '/' + encodeURIComponent(value)).then(ret => {
+        this.__checkError(this, ret);
+        return ret.result ? ret.result : ret
+      })
+    }
     fieldExists(name) {
     }
     addField(params) {
@@ -2244,7 +2253,7 @@
     }
     __propagateUserState(userState) {
       const vm = this;
-      vm.changeHooks.forEach((func) => {
+      vm.changeHooks.forEach(func => {
         if (vm.options.debug) {
           console.log('Triggering onAuthStateChanged callback', userState);
         }
