@@ -21,7 +21,12 @@ In your code, you can initialize the SDK using:
 
 ```js
 var PrevioletSDK = require('previolet')
-var sdk = new PrevioletSDK({ ... })
+var sdk = new PrevioletSDK({
+  instance: 'cXXXXXXXX',
+  region: 'eu.west1',         // Application region (optional)
+  tokenFallback: 'tk-XXXXXX', // Permanent token (optional)
+  appVersion: '1.0.0',        // Your custom app version (optional)
+})
 ```
 
 ### Script include
